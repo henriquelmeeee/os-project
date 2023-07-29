@@ -1,0 +1,1 @@
+#define GRAPHICAL_MODE
