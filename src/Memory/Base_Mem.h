@@ -1,8 +1,9 @@
+#pragma once
+
 #ifndef BASE_MEM
 #define BASE_MEM
 
 #include "Heap/Heap.h"
-#include "../Tasks/Process.h"
 
 #define u64 unsigned long
 #define u32 unsigned int
@@ -164,12 +165,13 @@ class Vector {
 };
 
 struct PhysicalPage {
-  Process::SysProc *proc_owning;
+  void *proc_owning;
   u64 page_number;
 };
 
-Vector<PhysicalPage> ppages_in_use;
+extern Vector<PhysicalPage> ppages_in_use;
 
+PhysicalPage kmmap(u64 size, u64 start_virtual_address);
 
 }
 #endif

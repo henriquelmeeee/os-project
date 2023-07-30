@@ -1,23 +1,21 @@
 // Processes starts in 100MB address (100.000.000)
-#ifndef PROCESS
-#define PROCESS
+#pragma once
+
+#ifndef PROCESS__
+#define PROCESS__
+
+#include "../Filesystem/Filesystem.h"
+#include "../Memory/Base_Mem.h"
 #include "../Utils/Base.h"
 #include "../Memory/Heap/Heap.h"
-#include "../Memory/Base_Mem.h"
 #include "../Drivers/VIDEO/preload.h"
-#include "../Filesystem/Filesystem.h"
-namespace Process {
-  bool init();
-
-  #define BINARY_MAGIC_NUMBER 0x5150
 
   enum state {
     RUNNING,
     PAUSED,
     ZOMBIE,
   };
-
-  extern enum state p_state;
+namespace Process {
   class SysProc {
     public:
       char name[17]; // 17 pois precisamos incluir null byte
@@ -31,18 +29,20 @@ namespace Process {
       void* DataSection;
       void* StackSection;
 
-      struct PT pt;
-      struct PD pd;
-      struct PDPT pdpt;
-      struct PML4 pml4;
 
       FrameBuffer *framebuffer; // NEED kmalloc() if GUI initializes
    
-      SysProc(const char *p_name, FS::Binary* pbin, unsigned int pid);
+      SysProc(const char *p_name, Binary* pbin, unsigned int pid);
   };
+}
+namespace Process {
+  bool init();
 
-  extern Memory::Vector<SysProc> procs;
-  extern SysProc* proc_current;
+  #define BINARY_MAGIC_NUMBER 0x5150
+  extern enum state p_state;
+
+  extern Memory::Vector<Process::SysProc> procs;
+  extern Process::SysProc* proc_current;
   extern u64 amount_of_procs;
 
   bool CreateProcess(const char* name, u16 privilege);

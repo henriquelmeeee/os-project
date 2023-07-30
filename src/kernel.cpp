@@ -223,9 +223,10 @@ namespace Initialize {
   }
   namespace SecondStage {
     bool init_procs() {
-      if(!(Process::init())) 
-        return false;
-      if(!(Process::CreateProcess("initd", 0)))
+      //if(!(Process::init())) 
+        //return false;
+      //if(!(Process::CreateProcess("initd", 0)))
+      return true;
     return true;
         return false;
       return true;

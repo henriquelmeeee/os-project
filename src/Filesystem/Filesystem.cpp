@@ -48,7 +48,9 @@ bool map_files_on_boot() {
   }
   return true;
 }
-
+Binary* LoadBinary(const char *fs_binary_location) {
+  return {};
+}
 /*bool create_file(char *bytes, unsigned long long file_size, char *name) {
   unsigned int last_sector = 0;
   if(number_of_files != 0) {

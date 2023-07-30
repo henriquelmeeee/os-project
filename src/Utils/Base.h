@@ -15,6 +15,14 @@
 #define i16 signed short
 #define i8 signed char
 
+struct Binary {
+  u16 magic_number;
+  u32 text_section_offset;
+  u32 data_section_offset;
+  u32 text_section_size;
+  u32 data_section_size;
+};
+
 #include "../panic.h"
 #include "../Memory/Base_Mem.h"
 
