@@ -1,12 +1,15 @@
 // Processes starts in 100MB address (100.000.000)
+#ifndef PROCESS
+#define PROCESS
 #include "../Utils/Base.h"
 #include "../Memory/Heap/Heap.h"
 #include "../Memory/Base_Mem.h"
 #include "../Drivers/VIDEO/preload.h"
-#ifndef PROCESS
-#define PROCESS
+#include "../Filesystem/Filesystem.h"
 namespace Process {
   bool init();
+
+  #define BINARY_MAGIC_NUMBER 0x5150
 
   enum state {
     RUNNING,
@@ -24,16 +27,18 @@ namespace Process {
       u32 pid;
       enum state p_state;
 
+      void* TextSection;
+      void* DataSection;
+      void* StackSection;
+
       struct PT pt;
       struct PD pd;
       struct PDPT pdpt;
       struct PML4 pml4;
 
       FrameBuffer *framebuffer; // NEED kmalloc() if GUI initializes
-                                //
-      struct Chunk *proc_instructions;
    
-      SysProc(const char *p_name, const char *fs_binary_location, unsigned int pid);
+      SysProc(const char *p_name, FS::Binary* pbin, unsigned int pid);
   };
 
   extern Memory::Vector<SysProc> procs;
