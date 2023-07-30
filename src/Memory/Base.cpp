@@ -19,24 +19,17 @@ namespace Memory {
     return -ENOMEM;
   }
 
-  u16 AllocateNewPage(u16 vPage) {
-    // TODO precisamos checar se há uma tabela PDPT quando formos fazer PML4[i]
-    // TODO big lock
-    if(vPage < 512) // não queremos mexer com as páginas do Kernel
-      return -EINVAL;
-    //
-    // Aqui nós pegamos o valor para a PDPT da página virtual atual:
-    //struct PageEntry *vPageLocation = &( (* (Process::CurrentProcess->PML4[vPage/511]) )[vPage%511] );
- 
-    i16 pPage = FindPhysicalPageAvailable(true); 
-    if(pPage == -ENOMEM) {
-      throw_panic(0, "Out of memory");}
+  PhysicalPage kmmap(u64 size, u64 start_virtual_address) {
+    // TODO alinhar size para cima, para alinhamento
+    size = size/PAGE_SIZE;
+    Vector<PhysicalPage> physical_pages_found;
+    for(u64 page=0;page<size;page++) {
+      // TODO append physical_pages_found
+      // TODO mapear baseado no start_virtual_address
+      // TODO add ppages_in_use
+    }
 
-    //vPageLocation->flag_bits.present = 1;
-    //vPageLocation->flag_bits.page_ppn = pPage;
-    
-    // TODO UpdatePageTable()
+    return physical_pages_found[0];
 
-    return pPage;
   }
 }
