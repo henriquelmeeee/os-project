@@ -360,7 +360,7 @@ extern "C" void kmain() {
         PT_entry.flag_bits.present = 0;
       else 
         PT_entry.flag_bits.present = 1;
-      PT_entry.flag_bits.physical_address = actual_page;
+      PT_entry.flag_bits.physical_address = actual_page * 4096;
       actual_page++;
       kPT[PDentry][PTentry] = PT_entry;
     }
@@ -380,10 +380,10 @@ extern "C" void kmain() {
   // o resto da memória só será configurada na hora de inicializar tabela para processos
 */
   
-  ASSERT(kPT[0][0].flag_bits.present == 1,   -ENOPT,   "Failed to create PT");
-  ASSERT(kPD[0].flag_bits.present    == 1,   -ENOPD,   "Failed to create PD");
-  ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT, "Failed to create PDPT");
-  ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4, "Failed to create PML4");
+  ASSERT(kPT[0][0].flag_bits.present == 1,   -ENOPT,    "Failed to create PT");
+  ASSERT(kPD[0].flag_bits.present    == 1,   -ENOPD,    "Failed to create PD");
+  ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT,  "Failed to create PDPT");
+  ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4,  "Failed to create PML4");
   
 
   dbg("kmain()-> Recriando tabela de paginação\n");

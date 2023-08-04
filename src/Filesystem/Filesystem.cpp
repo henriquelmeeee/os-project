@@ -2,6 +2,7 @@
 #include "../Utils/Base.h"
 #include "../Memory/Base_Mem.h"
 #include "../Memory/Heap/Heap.h"
+#include "Filesystem.h"
 
 #define FIRST_SECTOR_FOR_METADATA 300
 #define FIRST_SECTOR_FOR_USER_DATA 400

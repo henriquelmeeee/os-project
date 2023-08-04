@@ -44,14 +44,14 @@ start:
     ; 02h = define modo de vídeo
     ; 09h = informações sobre controlador de gráfico
 
-    mov ax, 0x4F02 ; define modo grafico
-    mov bx, 0x112 ; RGB
-    int 0x10
+    ;mov ax, 0x4F02 ; define modo grafico
+    ;mov bx, 0x112 ; RGB
+    ;int 0x10
   
-    mov ax, 0x4F01 ; obter informações do modo de vídeo
-    mov cx, 0x112
-    mov di, 0x5000 ; endreço para armazenar a estrutura
-    int 0x10
+    ;mov ax, 0x4F01 ; obter informações do modo de vídeo
+    ;mov cx, 0x112
+    ;mov di, 0x5000 ; endreço para armazenar a estrutura
+    ;int 0x10
 
   ;jc disk_error
   ;jnc cont
