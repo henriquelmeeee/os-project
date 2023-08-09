@@ -28,7 +28,11 @@ namespace Process {
       void* TextSection;
       void* DataSection;
       void* StackSection;
-
+      
+      unsigned long* PML4;
+      unsigned long* PDPT[512];
+      unsigned long* PD[512];
+      unsigned long* PT[512][512];
 
       FrameBuffer *framebuffer; // NEED kmalloc() if GUI initializes
    

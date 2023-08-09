@@ -1,8 +1,8 @@
-/*
-Se você encontrar problemas com o gerenciamento de páginas ao executar essa transição, 
-verifique se você desativou a cache de páginas (usando o bit CD no CR0) 
-antes de alterar as entradas da tabela de páginas. Isso ajudará a garantir que quaisquer alterações na tabela
-de páginas sejam refletidas imediatamente na memória.
+/* Virtual Memory Layout:
+ * 0-1GB          -> Kernel related
+ * 1->2GB         -> Stack related (userspace)
+ * 2->3GB         -> Heap related (userspace)
+ * 3->4GB         -> Static Data related (userspace)
 */
 
 extern "C" void kmain();
@@ -268,10 +268,14 @@ alignas(4096) Memory::PDPTEntry kPDPT[512];
 alignas(4096) Memory::PDEntry kPD[512];
 alignas(4096) Memory::PTEntry kPT[512][512];
 
+Memory::PhysicalRegion physical_stack;
+Memory::PhysicalRegion physical_heap;
+Memory::PhysicalRegion physical_data;
+
 extern "C" void kmain() {
   CLI;
   mem_usage+=KERNEL_SIZE;
-  TOTAL_RAM = 1 GB;
+  TOTAL_RAM = 2 GB;
   
   init_serial();
   
@@ -288,10 +292,6 @@ extern "C" void kmain() {
     dbg("kmain() -> Modo gráfico está habilitado\n");
     //Graphics::draw_window();
   #endif
-  
-  //TRY(Initialize::FirstStage::init(), ErrorType{CRITICAL}, "FirstStage init failed");
-  CLI;
-  //TRY(Initialize::SecondStage::init(), ErrorType{CRITICAL}, "SecondStage init failed");
 
   /*
     * Agora, nós precisamos configurar uma nova tabela de paginação base
@@ -353,10 +353,6 @@ extern "C" void kmain() {
   int actual_page = 0;
   for(int PDentry = 0; PDentry<512; PDentry++) {
     for(int PTentry = 0; PTentry<512; PTentry++) {
-      //if(actual_page < 6)
-        //PT_entry.flag_bits.present = 0;
-      //else 
-      //PT_entry.flag_bits.physical_address = actual_page * 4096;
       PT_entry.flags = (actual_page*4096) | 0x3; 
       actual_page++;
       kPT[PDentry][PTentry] = PT_entry;
@@ -393,6 +389,18 @@ extern "C" void kmain() {
       :"rax","memory"
       );
   dbg("kmain()-> Tabela de paginação recriada com sucesso\n");
+
+  dbg("kmain()-> Criando regiões para stack, heap e data\n");
+
+  physical_stack        = kmmap();
+  physical_heap         = kmmap();
+  physical_data         = kmmap();
+
+  TRY(Initialize::FirstStage::init(), ErrorType{CRITICAL}, "FirstStage init failed");
+  //TRY(Initialize::SecondStage::init(), ErrorType{CRITICAL}, "SecondStage init failed");
+  TRY(Process::init(), ErrorType{CRITICAL}, "Tasks initialization failed");
+
+
   halt();
  
   

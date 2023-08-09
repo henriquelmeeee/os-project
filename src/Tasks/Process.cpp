@@ -13,6 +13,8 @@ namespace Process{
   #define vPage i16
 
   u64 amount_of_procs = 0;
+  Memory::Vector<Process::SysProc> procs;
+
   SysProc::SysProc(const char *p_name, Binary *pbin, u32 pid) {
 
       if(pbin->magic_number != BINARY_MAGIC_NUMBER)
@@ -37,6 +39,22 @@ namespace Process{
       throw_panic(0, "teste");
       this->pid = pid;
     };
+    bool init() {
+      // -----
+      // Inicializando primeiro processo
+      // -----
+      procs = Memory::Vector<Process::SysProc>();
+      dbg("Process::init()-> Vetor de processos inicializado\n");
+      //TODO resolver problema em que uma chamada à memcpy() acontece se eu fizer atribuição direta
+      //procs[0] = SysProc("init", "init", (u32)0);
+
+      dbg("Process::init()-> Finalizado com sucesso\n");
+      // procs.append(SysProc(const_cast<char*>("init"), const_cast<char*>("init"), (u32)0)); // Inicializa um SysProc
+      // pages_in_use.append(Page((SysProc*)&(procs[0]), (u64)0)); // Cria uma página para o novo SysProc
+      return true;
+}; 
+
+
 };
 
 Memory::Vector<Process::SysProc> procs;
@@ -55,20 +73,7 @@ class Page {
       };
 };
 
-bool init() {
-  // -----
-  // Inicializando primeiro processo
-  // -----
-  procs = Memory::Vector<Process::SysProc>();
-  dbg("Process::init()-> Vetor de processos inicializado\n");
-  //TODO resolver problema em que uma chamada à memcpy() acontece se eu fizer atribuição direta
-  //procs[0] = SysProc("init", "init", (u32)0);
 
-  dbg("Process::init()-> Finalizado com sucesso\n");
- // procs.append(SysProc(const_cast<char*>("init"), const_cast<char*>("init"), (u32)0)); // Inicializa um SysProc
- // pages_in_use.append(Page((SysProc*)&(procs[0]), (u64)0)); // Cria uma página para o novo SysProc
-  return true;
-};
 
 u32 getNewPid() {
   return 1;

@@ -169,9 +169,29 @@ struct PhysicalPage {
   u64 page_number;
 };
 
+class PhysicalRegion {
+  public:
+    Vector<PhysicalPage> pages;
+    u32 index_of_pages;
+
+    u64 start_address;
+    u64 end_address;
+
+    PhysicalRegion() {
+      //dbg("Memory::PhysicalRegion-> criado\n");
+      this->index_of_pages=0;
+    }
+
+    void AllocateNewPage() {
+      pages[0] = {(void*)0,600}; // temp value, temos que achar uma pagina disponivel
+      // TODO add this page in kPD
+      ++this->index_of_pages;
+    }
+};
+
 extern Vector<PhysicalPage> ppages_in_use;
 
-PhysicalPage kmmap(u64 size, u64 start_virtual_address);
-
 }
+
+Memory::PhysicalRegion kmmap(u64 initial_size=0);
 #endif

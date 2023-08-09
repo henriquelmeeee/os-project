@@ -18,18 +18,18 @@ namespace Memory {
     }*/
     return -ENOMEM;
   }
-
-  PhysicalPage kmmap(u64 size, u64 start_virtual_address) {
-    // TODO alinhar size para cima, para alinhamento
-    size = size/PAGE_SIZE;
-    Vector<PhysicalPage> physical_pages_found;
-    for(u64 page=0;page<size;page++) {
-      // TODO append physical_pages_found
-      // TODO mapear baseado no start_virtual_address
-      // TODO add ppages_in_use
-    }
-
-    return physical_pages_found[0];
-
-  }
 }
+
+#define START_FOR_KMMAP 1 GB
+Memory::PhysicalRegion kmmap(u64 initial_size) {
+  // TODO alinhar size para cima, para alinhamento
+  initial_size /= PAGE_SIZE;
+  Memory::PhysicalRegion temp;
+
+  for(int page=0;page<initial_size;page++) {
+    temp.AllocateNewPage();
+    dbg("Nova página alocada para PhysicalRegion\n");
+  }
+  return temp;
+}
+
