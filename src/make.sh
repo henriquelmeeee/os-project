@@ -81,12 +81,27 @@ mv tmp.prekernel.asm prekernel.asm
 dd if=bin/final of=../Build/disk.img bs=512 count=20000 conv=notrunc
 dd if=bin/kernel.bin of=../Build/disk.img bs=512 seek=100 conv=notrunc
 
-/bin/bash -c "echo -ne '\xeb\xfe' > bin/tmp/bytes.bin"
-
+#/bin/bash -c "echo -ne '\xeb\xfe' > bin/tmp/bytes.bin"
 dd if=bin/tmp/bytes.bin of=../Build/disk.img bs=512 seek=400 conv=notrunc
 
-#xrm ../Build/disk.vdi
-#VBoxManage convertfromraw --format VDI ../Build/disk.img:wq ../Build/disk.vdi
-#VBoxManage internalcommands sethduuid ../Build/disk.vdi
+file_path="../Build/disk.img"
+block_size=512
+
+file_size=$(stat -c%s "$file_path")
+remainder=$(($file_size % $block_size))
+
+if [ $remainder -ne 0 ]; then
+  padding=$(($block_size - $remainder))
+  dd if=/dev/zero bs=1 count=$padding >> "$file_path"
+  echo "Arquivo alinhado com sucesso."
+else
+  echo "O arquivo já está alinhado."
+fi
+
+truncate ../Build/disk.img --size=100M
+
+rm ../Build/disk.vdi
+VBoxManage convertfromraw --format VDI ../Build/disk.img ../Build/disk.vdi
+VBoxManage internalcommands sethduuid ../Build/disk.vdi
 sleep 1
 sh run.sh

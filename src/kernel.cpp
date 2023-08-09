@@ -1,3 +1,10 @@
+/*
+Se você encontrar problemas com o gerenciamento de páginas ao executar essa transição, 
+verifique se você desativou a cache de páginas (usando o bit CD no CR0) 
+antes de alterar as entradas da tabela de páginas. Isso ajudará a garantir que quaisquer alterações na tabela
+de páginas sejam refletidas imediatamente na memória.
+*/
+
 extern "C" void kmain();
 #define KERNEL_SIZE 26112
 // Drivers:
@@ -305,11 +312,9 @@ extern "C" void kmain() {
   }
 
   entry.flags = 0; // limpa todas flags (define todas como 0)
-  entry.flag_bits.present = 1;
-  entry.flag_bits.read_write = 1;
-  entry.flag_bits.user_supervisor = 1;
   for(int pml4e = 0; pml4e<512; pml4e++) {
-    entry.flag_bits.physical_address = (reinterpret_cast<u64>(kPDPT)); // Inicialmente alocaremos 1 única PDPT
+    //entry.flag_bits.physical_address = (reinterpret_cast<u64>(kPDPT)); // Inicialmente alocaremos 1 única PDPT
+    entry.flags = (reinterpret_cast<u64>(kPDPT) & ~0xFFF) | 0x3; 
     kPML4[pml4e] = entry;
   }
 
@@ -328,25 +333,17 @@ extern "C" void kmain() {
   Memory::PDPTEntry PDPT_entry;
 
   PDPT_entry.flags = 0;
-  PDPT_entry.flag_bits.present = 1;
-  PDPT_entry.flag_bits.read_write = 1;
-  PDPT_entry.flag_bits.user_supervisor = 1; // TODO FIXME isso é temporário para não termos erros de permissão
   for(int PDPTentry = 0; PDPTentry<512; PDPTentry++) {
-    PDPT_entry.flag_bits.physical_address = (reinterpret_cast<u64>(&(kPD[PDPTentry])));
+    //PDPT_entry.flag_bits.physical_address = (reinterpret_cast<u64>(&(kPD[PDPTentry])));
+    PDPT_entry.flags = (reinterpret_cast<u64>(&(kPD[PDPTentry])) & ~0xFFF) | 0x3; 
     kPDPT[PDPTentry] = PDPT_entry;
   }
 
   Memory::PDEntry PD_entry;
   PD_entry.flags = 0;
-  PD_entry.flag_bits.present = 1;
-  PD_entry.flag_bits.read_write = 1;
-  PD_entry.flag_bits.user_supervisor = 1;
 
   Memory::PTEntry PT_entry;
   PT_entry.flags = 0;
-  PT_entry.flag_bits.present = 1;
-  PT_entry.flag_bits.read_write = 1;
-  PT_entry.flag_bits.user_supervisor = 1;
  
   /*
    * Cada diretório de páginas precisa apontar para uma tabela de páginas
@@ -356,16 +353,16 @@ extern "C" void kmain() {
   int actual_page = 0;
   for(int PDentry = 0; PDentry<512; PDentry++) {
     for(int PTentry = 0; PTentry<512; PTentry++) {
-      if(actual_page < 6)
-        PT_entry.flag_bits.present = 0;
-      else 
-        PT_entry.flag_bits.present = 1;
-      PT_entry.flag_bits.physical_address = actual_page * 4096;
+      //if(actual_page < 6)
+        //PT_entry.flag_bits.present = 0;
+      //else 
+      //PT_entry.flag_bits.physical_address = actual_page * 4096;
+      PT_entry.flags = (actual_page*4096) | 0x3; 
       actual_page++;
       kPT[PDentry][PTentry] = PT_entry;
     }
-    PD_entry.flag_bits.present = 1;
-    PD_entry.flag_bits.physical_address = (reinterpret_cast<u64>(&(kPT[PDentry])));
+    //PD_entry.flag_bits.physical_address = (reinterpret_cast<u64>(&(kPT[PDentry])));
+    PD_entry.flags = (reinterpret_cast<u64>(&kPT[PDentry])) & ~0xFFF | 0x3; 
     kPD[PDentry] = PD_entry;
   }
 
@@ -385,12 +382,11 @@ extern "C" void kmain() {
   ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT,  "Failed to create PDPT");
   ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4,  "Failed to create PML4");
   
-
   dbg("kmain()-> Recriando tabela de paginação\n");
   __asm__ volatile( 
-      "mov %%cr4, %%rax;" 
-      "and $0xffffffdf, %%eax;" 
-      "mov %%rax, %%cr4;" 
+      //"mov %%cr4, %%rax;" 
+      //"and $0xffffffdf, %%eax;" 
+      //"mov %%rax, %%cr4;" 
       "mov %0, %%cr3;" 
       : 
       : "r" (kPML4)
