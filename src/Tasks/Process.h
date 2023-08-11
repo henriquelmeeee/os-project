@@ -25,14 +25,16 @@ namespace Process {
       u32 pid;
       enum state p_state;
 
-      void* TextSection;
-      void* DataSection;
-      void* StackSection;
+      alignas(4096) Memory::PhysicalRegion TextSection;
+      alignas(4096) Memory::PhysicalRegion DataSection;
+      alignas(4096) Memory::PhysicalRegion StackSection;
       
-      unsigned long* PML4;
-      unsigned long* PDPT[512];
-      unsigned long* PD[512];
-      unsigned long* PT[512][512];
+      alignas(4096) unsigned long PML4[5]; // 512GB each entry
+      alignas(4096) unsigned long PDPT[512]; // 1GB each entry
+      alignas(4096) unsigned long PD[512][512]; // 2MB each entry
+      
+      alignas(4096) unsigned long kPT[512][512];
+      alignas(4096) unsigned long textPT[512][512];
 
       FrameBuffer *framebuffer; // NEED kmalloc() if GUI initializes
    

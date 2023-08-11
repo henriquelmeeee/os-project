@@ -301,10 +301,6 @@ extern "C" void kmain() {
 
   Memory::PML4Entry entry;
   
-  char buffertmp[128];
-  itos((u64)kPML4, buffertmp);
-  dbg(buffertmp);
-
   for(int i = 0; i<512; i++) {
     kPDPT[i] = {0};
     kPML4[i] = {0};
@@ -399,6 +395,10 @@ extern "C" void kmain() {
   TRY(Initialize::FirstStage::init(), ErrorType{CRITICAL}, "FirstStage init failed");
   //TRY(Initialize::SecondStage::init(), ErrorType{CRITICAL}, "SecondStage init failed");
   TRY(Process::init(), ErrorType{CRITICAL}, "Tasks initialization failed");
+  
+  //Binary* shell_buffer = FS::LoadBinary("Shell");
+  //dbg("shell carregado (512 bytes)\n"); 
+
 
 
   halt();

@@ -1,26 +1,20 @@
+ENTRY(_start)
+
 SECTIONS
 {
-    . = 0x100000;
+  . = 0x0;
+  .header : { LONG(_start); LONG(_data) }
 
-    .text :
-    {
-        *(main.o(.text)) /* ensure main is first */
-        *(.text)
-    }
+  .data :
+  {
+    _data = .;
+    *(.data)
+  }
 
-    .data :
-    {
-        *(.data)
-    }
-
-    .bss :
-    {
-        *(.bss)
-        . = ALIGN(4);
-    }
-
-    /DISCARD/ :
-    {
-        *(.eh_frame)
-    }
+  .text :
+  {
+    _start = .;
+    *(.text)
+  }
 }
+

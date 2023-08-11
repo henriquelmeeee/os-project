@@ -10,7 +10,7 @@
 
 struct GenericFile { // essa é a mesma estrutura presente no disco METADATA
   unsigned int sectors[MAX_SECTORS];
-  char name;
+  char* name;
 };
 
 Memory::Vector<struct GenericFile> files;
@@ -34,7 +34,7 @@ void add_file_metadata(struct GenericFile file) {
 
 bool map_files_on_boot() {
   for(int i = FIRST_SECTOR_FOR_METADATA; ; i++) {
-    struct GenericFile file_buffer; 
+    GenericFile file_buffer; 
     read_from_sector((char*)&file_buffer, (u32)i);
     if(file_buffer.sectors[0] != 0) { // caso existir um metadado de arquivo nesse setor
       dbg("map_files_on_boot()-> Arquivo encontrado\n");
@@ -49,8 +49,25 @@ bool map_files_on_boot() {
   }
   return true;
 }
-Binary* LoadBinary(const char *fs_binary_location) {
+
+GenericFile get_file_metadata(const char *fs_binary_location) {
+  for(int _files = 0; _files<number_of_files; _files++) {
+    //if(kstrcmp(files[_files].name, fs_binary_location)) {
+    if(true) {  
+      return files[_files];
+    }
+  }
   return {};
+}
+
+Binary* buf;
+
+Binary* LoadBinary(const char *fs_binary_location) {
+  //GenericFile file_metadata = get_file_metadata(fs_binary_location);
+  // TODO ler todos setores usando o file_metadata, essa função é responsável por colocar o binário no kernel temporariamente 
+  // TODO usar a heap ao invés de variavel global
+  read_from_sector((char*)buf, 500);
+  return buf;
 }
 /*bool create_file(char *bytes, unsigned long long file_size, char *name) {
   unsigned int last_sector = 0;

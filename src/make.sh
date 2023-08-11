@@ -44,6 +44,12 @@ g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c T
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Utils/Base.cpp -o bin/tmp/base.o
 
 ld -nostdlib -static -T KernelLinker.ld bin/tmp/kernel.o bin/tmp/fpuerr.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/fs.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/heap.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o bin/tmp/mbase.o -o bin/kernel.bin
+
+echo "Compilando shell"
+
+g++ -m64 -ffreestanding -fno-exceptions -fno-rtti -c Base/files/Shell.cpp -o bin/tmp/shell.o
+ld -nostdlib -static -T Base/files/linker.ld bin/tmp/shell.o -o bin/shell.bin
+
 #dd if=/dev/zero of=../Build/disk.img bs=1M count=50
 
 SECTORS_KERNEL=$(stat -c%s "bin/kernel.bin")
@@ -81,8 +87,7 @@ mv tmp.prekernel.asm prekernel.asm
 dd if=bin/final of=../Build/disk.img bs=512 count=20000 conv=notrunc
 dd if=bin/kernel.bin of=../Build/disk.img bs=512 seek=100 conv=notrunc
 
-#/bin/bash -c "echo -ne '\xeb\xfe' > bin/tmp/bytes.bin"
-dd if=bin/tmp/bytes.bin of=../Build/disk.img bs=512 seek=400 conv=notrunc
+dd if=bin/shell.bin of=../Build/disk.img bs=512 seek=500 conv=notrunc
 
 file_path="../Build/disk.img"
 block_size=512

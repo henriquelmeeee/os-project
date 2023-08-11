@@ -17,8 +17,8 @@ namespace Process{
 
   SysProc::SysProc(const char *p_name, Binary *pbin, u32 pid) {
 
-      if(pbin->magic_number != BINARY_MAGIC_NUMBER)
-        return;
+      //if(pbin->magic_number != BINARY_MAGIC_NUMBER)
+        //return;
       
       //Utils::kmemcpy(name, p_name, 16);
 
@@ -34,10 +34,56 @@ namespace Process{
        * nós precisamos alocar a região de código, de dados e da stack na Heap
        * e então pegar o endereço resultante e colocar em cada página
       */
-
+      
+      
       dbg("Process::constructor-> Inicializando páginas para processo novo\n");
-      throw_panic(0, "teste");
+      this->TextSection = kmmap(4096); // FIXME precisa ser alinhado, checar melhor a implementação de kmmap()
+      this->DataSection = kmmap(4096);
+
+      int offset_to_text = pbin->text_section_offset;
+
+      __builtin_memcpy(&this->TextSection, (char*)pbin+offset_to_text, 4096);
       this->pid = pid;
+      dbg("Process::constructor-> Alocado 4KB para .text e 4KB para .data\n");
+      
+      // Kernel identity-mapping (por enquanto!)
+
+      this->PML4[0] = (unsigned long)(&(this->PDPT));
+      this->PML4[0] |= 0x3;
+      
+      this->PDPT[0] = (unsigned long)(&(this->PD[0])); // 0-1GB
+      this->PDPT[0] |= 0x3;
+
+      this->PDPT[1] = (unsigned long)(&(this->PD[1])); // 1-2GB
+      this->PDPT[1] |= 0x3; 
+      
+      for(int PD_entry = 0; PD_entry < 512; PD_entry++) {
+        for(int PT_entry = 0; PT_entry < 512; PT_entry++) {
+          this->kPT[PD_entry][PT_entry] = PT_entry*4096;
+          this->kPT[PD_entry][PT_entry] |= 0x3;
+
+          //this->PT[1][PT_entry] = (unsigned long)(&(this->TextSection));
+          //this->PT[1][PT_entry] |= 0x3;
+        }
+        this->PD[0][PD_entry] = (unsigned long)(&(this->kPT[PD_entry]));
+        this->PD[0][PD_entry] |= 0x3;
+
+        //this->PD[1][PD_entry] = (unsigned long)(&(this->PT[1][PD_entry]));
+        //this->PD[1][PD_entry] |= 0x3;
+      }
+      
+      dbg("TESTANDO NOVA PAGINAÇÃO\n");
+
+      __asm__ volatile( 
+        "mov %0, %%cr3;" 
+        : 
+        : "r" (this->PML4)
+        :"rax","memory"
+      );
+
+      dbg("SE VC ESTA VENDO ESSA MENSAGEM, ENTAO FUNCIONOU\n");
+      __asm__ volatile("hlt");
+
     };
     bool init() {
       // -----
@@ -47,6 +93,10 @@ namespace Process{
       dbg("Process::init()-> Vetor de processos inicializado\n");
       //TODO resolver problema em que uma chamada à memcpy() acontece se eu fizer atribuição direta
       //procs[0] = SysProc("init", "init", (u32)0);
+      Binary* shell;
+      read_from_sector((char*)shell, 500);
+      dbg("Process::init()-> shell carregado\n");
+      procs[0] = SysProc("Shell", shell, 1);
 
       dbg("Process::init()-> Finalizado com sucesso\n");
       // procs.append(SysProc(const_cast<char*>("init"), const_cast<char*>("init"), (u32)0)); // Inicializa um SysProc
@@ -83,13 +133,13 @@ bool CreateProcess(const char* name, u16 privilege, const char* fs_binary_locati
   if(privilege != 0){ throw_panic(0, "CreateProcess::privilege>0: not yet implemented");}
 
   Binary *bin = FS::LoadBinary(fs_binary_location);
-  if(bin->magic_number != BINARY_MAGIC_NUMBER)
-    return false;
+  //if(bin->magic_number != BINARY_MAGIC_NUMBER)
+    //return false;
 
   Process::SysProc new_process = Process::SysProc(name, bin, getNewPid());
 
-  if ( (new_process.TextSection == 0) || (new_process.DataSection == 0) )
-    return false;
+  //if ( (new_process.TextSection == 0) || (new_process.DataSection == 0) )
+    //return false;
 
   kfree(bin);
 
