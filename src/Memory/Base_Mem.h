@@ -183,8 +183,9 @@ class PhysicalRegion {
     }
 
     void AllocateNewPage() {
-      pages[0] = {(void*)0,600}; // temp value, temos que achar uma pagina disponivel
+      pages[0] = {(void*)0,512}; // temp value, temos que achar uma pagina disponivel
       // TODO add this page in kPD
+      start_address = 512*4096;
       ++this->index_of_pages;
     }
 };

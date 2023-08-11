@@ -31,8 +31,10 @@ namespace Process {
       
       alignas(4096) unsigned long PML4[5]; // 512GB each entry
       alignas(4096) unsigned long PDPT[512]; // 1GB each entry
-      alignas(4096) unsigned long PD[512][512]; // 2MB each entry
       
+      alignas(4096) unsigned long kPD[512]; // 2MB each entry
+      alignas(4096) unsigned long textPD[512];
+
       alignas(4096) unsigned long kPT[512][512];
       alignas(4096) unsigned long textPT[512][512];
 

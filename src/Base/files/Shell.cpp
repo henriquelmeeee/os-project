@@ -5,5 +5,12 @@
 
 
 int main() {
-  while(true);
+  asm volatile (
+        "mov $0x2000, %%dx;" // Carrega o porto de I/O 0x2000 em DX
+        "mov $0x2000, %%al;" // Carrega o valor 0x2000 em AL
+        "out %%al, %%dx;"     // Escreve AL para o porto de I/O em DX
+        :
+        :
+        : "dx", "al"
+    );
 }

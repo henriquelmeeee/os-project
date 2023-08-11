@@ -37,12 +37,12 @@ namespace Process{
       
       
       dbg("Process::constructor-> Inicializando páginas para processo novo\n");
-      this->TextSection = kmmap(4096); // FIXME precisa ser alinhado, checar melhor a implementação de kmmap()
-      this->DataSection = kmmap(4096);
 
       int offset_to_text = pbin->text_section_offset;
+      this->TextSection.start_address = (512*4096);
 
-      __builtin_memcpy(&this->TextSection, (char*)pbin+offset_to_text, 4096);
+      __builtin_memcpy((char*)this->TextSection.start_address, (char*)pbin+offset_to_text, 4096);
+      
       this->pid = pid;
       dbg("Process::constructor-> Alocado 4KB para .text e 4KB para .data\n");
       
@@ -50,28 +50,36 @@ namespace Process{
 
       this->PML4[0] = (unsigned long)(&(this->PDPT));
       this->PML4[0] |= 0x3;
+
+      // kernel identity-mapping
       
-      this->PDPT[0] = (unsigned long)(&(this->PD[0])); // 0-1GB
+      this->PDPT[0] = (unsigned long)(&(this->kPD)); // 0-1GB
       this->PDPT[0] |= 0x3;
 
-      this->PDPT[1] = (unsigned long)(&(this->PD[1])); // 1-2GB
-      this->PDPT[1] |= 0x3; 
-      
+      // text
+
+      this->PDPT[1] = (unsigned long)(&(this->textPD));
+      this->PDPT[1] |= 0x3;
+
+
+      int actual_page=0; 
       for(int PD_entry = 0; PD_entry < 512; PD_entry++) {
         for(int PT_entry = 0; PT_entry < 512; PT_entry++) {
-          this->kPT[PD_entry][PT_entry] = PT_entry*4096;
+          this->kPT[PD_entry][PT_entry] = actual_page*4096;
+          actual_page++;
           this->kPT[PD_entry][PT_entry] |= 0x3;
-
-          //this->PT[1][PT_entry] = (unsigned long)(&(this->TextSection));
-          //this->PT[1][PT_entry] |= 0x3;
         }
-        this->PD[0][PD_entry] = (unsigned long)(&(this->kPT[PD_entry]));
-        this->PD[0][PD_entry] |= 0x3;
+        this->kPD[PD_entry] = (unsigned long)(&(this->kPT[PD_entry]));
+        this->kPD[PD_entry] |= 0x3;
+        
+        this->textPD[PD_entry] = (unsigned long)(&(this->textPT[PD_entry]));
+        this->textPD[PD_entry] |= 0x3;
 
-        //this->PD[1][PD_entry] = (unsigned long)(&(this->PT[1][PD_entry]));
-        //this->PD[1][PD_entry] |= 0x3;
       }
-      
+
+      this->textPT[0][0] = (unsigned long)((char*)(this->TextSection.start_address)); // NEEDS TO BE ALLIGNED!
+      this->textPT[0][0] |= 0x3;
+
       dbg("TESTANDO NOVA PAGINAÇÃO\n");
 
       __asm__ volatile( 
@@ -82,7 +90,12 @@ namespace Process{
       );
 
       dbg("SE VC ESTA VENDO ESSA MENSAGEM, ENTAO FUNCIONOU\n");
-      __asm__ volatile("hlt");
+      __asm__ volatile(
+          "jmp %[target]"
+          : [target] "=r" (this->TextSection.start_address)
+          :
+          :
+          );
 
     };
     bool init() {
