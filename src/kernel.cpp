@@ -131,6 +131,7 @@ namespace Initialize {
         };
       };*/
       case 33:{ // 33 IRQ1 - Teclado
+        dbg("IRQ1 33\n");
         u64 keyboard_interrupt_addr = reinterpret_cast<u64>(Drivers::Keyboard::keyboard_interrupt_key);
         IDT_entries[i] = (struct IDT_entry){
           .base_lo = static_cast<u16>(keyboard_interrupt_addr & (u64) 0xFFFF),
@@ -186,37 +187,27 @@ namespace Initialize {
       #define PIC2_DATA    0xA1
       #define PIC_EOI      0x20
       #define PIC_INIT     0x11
-      #define PIC_ICW4     0x01
-      //
-      /*outb(PIC1_COMMAND, PIC_INIT);
+      #define PIC_ICW4     0x01 // Interrupt control word
+
+      outb(PIC1_COMMAND, PIC_INIT);
       outb(PIC2_COMMAND, PIC_INIT);
     
+      // ICW2: Definir o vetor de início
       outb(PIC1_DATA, 32);   // Definir o vetor de interrupção inicial do PIC1 para 32 (0x20)
-      outb(PIC1_DATA, 96);    // Definir PIC2 para ser acionado pela linha IRQ2 do PIC1 (96)
+      outb(PIC1_DATA, 40);    // Definir PIC2 para ser acionado pela linha IRQ2 do PIC1 (40)
+      
+      // ICW3: Informar ao PIC1 que o PIC2 está em IRQ2 e informar ao PIC2 seu número de cascata
+      outb(PIC1_DATA, 0x04); 
+      outb(PIC2_DATA, 0x02);
+
       outb(PIC1_DATA, PIC_ICW4);
-
-      outb(PIC1_DATA, 0x04);   // Definir o vetor de interrupção inicial do PIC2 para 40 (0x28)
-      outb(PIC2_DATA, 0x02);    // Definir PIC2 para ser acionado pela linha IRQ2 do PIC1
-
       outb(PIC2_DATA, PIC_ICW4);
-      outb(PIC1_COMMAND, PIC_EOI);*/
-      outb(0x20, 0x11);
-      outb(0xA0, 0x11);
-      outb(0x21, 0x21); // teclado
-      outb(0xA1, 0x70);    /* start vector = 96 */
 
-    /* Initialization of ICW3 */
-      outb(0x21, 0x04);
-      outb(0xA1, 0x02);
+      // Desmascarando interrupção do teclado
+      
+      outb(PIC1_DATA, 0xFE);
+      outb(PIC2_DATA, 0xFF);
 
-    /* Initialization of ICW4 */
-      outb(0x21, 0x01);
-      outb(0xA1, 0x01);
-
-    /* mask interrupts */
-      outb(PIC1_DATA, 0x0);
-      outb(PIC1_DATA, (u8)(inb(PIC1_DATA) & ~(1 << 1)));
-      outb(0xA1, 0x0);
       return true;
     }
     bool init() {
@@ -394,14 +385,13 @@ extern "C" void kmain() {
 
   TRY(Initialize::FirstStage::init(), ErrorType{CRITICAL}, "FirstStage init failed");
   //TRY(Initialize::SecondStage::init(), ErrorType{CRITICAL}, "SecondStage init failed");
-  TRY(Process::init(), ErrorType{CRITICAL}, "Tasks initialization failed");
+  //TRY(Process::init(), ErrorType{CRITICAL}, "Tasks initialization failed");
   
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
 
-
-
-  halt();
+  STI;
+  while(true);
  
   
 

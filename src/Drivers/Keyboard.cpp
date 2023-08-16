@@ -18,7 +18,6 @@ namespace Keyboard {
   };
 
   bool caps = false;
-
   bool shift = false;
 
   void NO_CALLER_SAVED_REGISTERS handle_caps() {
@@ -61,9 +60,9 @@ namespace Keyboard {
    *    corretamente.
   */    
 
-  void __attribute__((interrupt)) keyboard_interrupt_key(struct State *s) {
+  void __attribute__((interrupt)) keyboard_interrupt_key(struct KeyboardStack *s) {
     CLI;
-    dbg("cheguei fml");
+    dbg("keyboard_interrupt_key()\n");
     unsigned char status;
     unsigned char scancode;
 

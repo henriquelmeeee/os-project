@@ -4,7 +4,10 @@
 #include "../Utils/Base.h"
 namespace Drivers {
   namespace Keyboard {
-    void NO_CALLER_SAVED_REGISTERS keyboard_interrupt_key(struct State *s);    
+    struct KeyboardStack {
+      
+    };
+    void NO_CALLER_SAVED_REGISTERS keyboard_interrupt_key(struct KeyboardStack *s);    
     extern unsigned int keys[255];
   }
 }
