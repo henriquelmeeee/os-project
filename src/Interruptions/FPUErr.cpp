@@ -3,8 +3,8 @@
 
 extern "C" __attribute__((interrupt)) void i_fpuerr(struct ExceptionState *s) {
   CLI;
-  __asm__ volatile("hlt");
   dbg("a");
+  __asm__ volatile("hlt");
   //dbg("CPU: EXCEÇÃO ENCONTRADA!\nFPU-Error #MF\n");
   /*unsigned short control_word;
 

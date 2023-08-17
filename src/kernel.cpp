@@ -29,6 +29,7 @@ extern "C" void kmain();
 #include "Interruptions/preload.h"
 #include "Drivers/Keyboard.h"
 
+#include "Processor.h"
 
 unsigned long long mem_usage = 0;
 
@@ -48,29 +49,44 @@ unsigned long long TOTAL_RAM = 0;
 
 unsigned long *pages_in_use;
 
-// IDT -> configurações gerais
-
-struct IDT_entry { // Interruption Gate
-  u16 base_lo; // endereço mais baixo da ISR (deslocamento baseado no segmento)
-  u16 sel; // seletor de segmento do kernel
-  unsigned char always0;
-  unsigned char flags;
-  u16 base_mid;
-  u32 base_hi;
-  u32 reserved; // FIXME u32 or unsigned char or char?
-} __attribute__((packed));
-
 struct IDT_ptr {
   unsigned short limit;
-  struct IDT_entry* base;
+  unsigned long base;
 } __attribute__((packed));
 
-struct IDT_entry IDT_entries[256]; // aloca elementos para IDT
+
+alignas(4096) unsigned long IDT_entries[256];
 
 void halt() {
   __asm__ volatile(
       "hlt"
       );
+}
+
+bool IDT_append(u64 addr, i32 offset) {
+  /*
+  IDT_entries[offset] = \
+    {
+      .base_lo = static_cast<u16>(addr & (u64) 0xFFFF),
+      .sel = (unsigned short)0x08,
+      .always0 = (char)0,
+      .flags = (unsigned char)0x8E,
+      .base_mid = static_cast<u16>((addr>>16) & (u64)0xFFFF),
+      .base_hi = static_cast<u32>(addr>>32),
+      .reserved = (u32)0,
+    };
+  */
+  u16 selector = 0x08;
+  u8 flags = 0x8E;
+  u64 entry = ((u64)flags << 40) |
+    ((u64)selector << 16) |
+    (addr & 0xFFFF) |
+    ((addr & 0xFFFF0000) << 32) |
+    ((u64)(addr >> 32) << 48);
+
+  IDT_entries[offset] = entry;
+
+  return true;
 }
 
 void disable_irq(int irq) {
@@ -89,76 +105,20 @@ void disable_irq(int irq) {
 
 namespace Initialize {
   namespace FirstStage {
-  bool init_idt_entries() {
-  for(int i = 0; i<sizeof(IDT_entries) / sizeof(IDT_entries[0]); i++) {
-    #ifndef IDT_entries_amount
-      #define IDT_entries_amount 256
-    #endif
+    bool init_idt_entries() {
+      for(auto entry : IDT_entries)
+        __builtin_memset(&entry, 0, 8);
 
-    if(i+1 > IDT_entries_amount)
-      break;
-    
+      for(int i = 0; i<255; i++)
+        IDT_append(reinterpret_cast<u64>(i_spurious), i);
 
-    switch (i) {
-      case 16: { // FPU-x87 error
-        u64 fpu_err_addr = reinterpret_cast<u64>(i_fpuerr);
-        IDT_entries[i] = (struct IDT_entry){
-          .base_lo = static_cast<u16>(fpu_err_addr & (u64) 0xFFFF),
-          .sel = (unsigned short)0x08,
-          .always0 = (char)0, // interrupt stack table
-          .flags = (unsigned char)0x8E,
-          .base_mid = static_cast<u16>((fpu_err_addr>>16) & (u64)0xFFFF),
-          .base_hi = static_cast<u32>(fpu_err_addr>>32),
-          .reserved = (u32)0, 
-        };
-      };
-      case 502: { //14+32 disco      
-        break;
-      };
-      case 501: {//15+32 disco também
-        break;
-      }
-      /*case 500:{ // 12+32 IRQ12 = moue
-        u64 mouse_interrupt_addr = reinterpret_cast<u64>(Drivers::Mouse::mouse_interrupt);
-        IDT_entries[i] = (struct IDT_entry){
-          .base_lo = static_cast<u16>(mouse_interrupt_addr & (u64) 0xFFFF),
-          .sel = 0x08,
-          .always0 = 0,
-          .flags = 0x8E,
-          .base_mid = static_cast<u16>((mouse_interrupt_addr>>16) & (u64)0xFFFF),
-          .base_hi = static_cast<u32>(mouse_interrupt_addr>>32),
-          .reserved = (u32)0,
-        };
-      };*/
-      case 33:{ // 33 IRQ1 - Teclado
-        dbg("IRQ1 33\n");
-        u64 keyboard_interrupt_addr = reinterpret_cast<u64>(Drivers::Keyboard::keyboard_interrupt_key);
-        IDT_entries[i] = (struct IDT_entry){
-          .base_lo = static_cast<u16>(keyboard_interrupt_addr & (u64) 0xFFFF),
-          .sel = 0x08,
-          .always0 = 0,
-          .flags = 0x8E,
-          .base_mid = static_cast<u16>((keyboard_interrupt_addr>>16) & (u64)0xFFFF),
-          .base_hi = static_cast<u32>(keyboard_interrupt_addr>>32),
-          .reserved = (u32)0,
-        };
-        break;}
-      default:
-        u64 i_spurious_addr = reinterpret_cast<u64>(i_spurious);
-        IDT_entries[i] = (struct IDT_entry){
-          .base_lo = static_cast<u16>(i_spurious_addr & (u64) 0xFFFF),
-          .sel = 0x08,
-          .always0 = 0,
-          .flags = 0x8E,
-          .base_mid = static_cast<u16>((i_spurious_addr>>16) & (u64)0xFFFF),
-          .base_hi = static_cast<u32>(i_spurious_addr>>32),
-          .reserved = (u32)0,
-        };
-        break;
-    };
-  }
-  return true;
-}
+      u64 fpu_err_addr = reinterpret_cast<u64>(i_fpuerr);
+      u64 keyboard_addr = reinterpret_cast<u64>(Drivers::Keyboard::keyboard_interrupt_key);
+
+      IDT_append(keyboard_addr, 31);
+      IDT_append(fpu_err_addr, 16);
+      return true;
+    }
 
     bool init_idt_ptr(u16 size) {
       // Inicializa os descritores da IDT
@@ -194,7 +154,7 @@ namespace Initialize {
     
       // ICW2: Definir o vetor de início
       outb(PIC1_DATA, 32);   // Definir o vetor de interrupção inicial do PIC1 para 32 (0x20)
-      outb(PIC1_DATA, 40);    // Definir PIC2 para ser acionado pela linha IRQ2 do PIC1 (40)
+      outb(PIC2_DATA, 40);    // Definir PIC2 para ser acionado pela linha IRQ2 do PIC1 (40)
       
       // ICW3: Informar ao PIC1 que o PIC2 está em IRQ2 e informar ao PIC2 seu número de cascata
       outb(PIC1_DATA, 0x04); 
@@ -212,7 +172,7 @@ namespace Initialize {
     }
     bool init() {
       TRY(init_idt_entries(), ErrorType{CRITICAL}, "An error occurred while trying to initialize the IDT");
-      TRY(init_idt_ptr(sizeof(IDT_entries)), ErrorType{CRITICAL}, "An error occurred while trying to initialize the IDT (lidt)");
+      TRY(init_idt_ptr(256), ErrorType{CRITICAL}, "An error occurred while trying to initialize the IDT (lidt)");
       TRY(init_idt_config(), ErrorType{CRITICAL}, "An error occurred while trying to configure the IDT");
       //TRY(init_pages_in_use(), ErrorType{CRITICAL});
 
@@ -389,11 +349,9 @@ extern "C" void kmain() {
   
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
-
   STI;
   while(true);
  
   
 
-  //STI;*/
 }
