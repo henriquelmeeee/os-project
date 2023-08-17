@@ -1,6 +1,15 @@
 #include "../Utils/Base.h"
-#include "../Interruptions/Stack.h"
 #include "../panic.h"
+#include "../Memory/Base_Mem.h"
+
+struct KeyboardInterrupt {
+  u64 rip;
+  u64 cs;
+  u64 flags;
+  u64 rsp;
+  u64 ss;
+  u8 scancode;
+};
 
 namespace Drivers{
 namespace Keyboard {
@@ -60,7 +69,7 @@ namespace Keyboard {
    *    corretamente.
   */    
 
-  void __attribute__((interrupt)) keyboard_interrupt_key(struct KeyboardStack *s) {
+  void __attribute__((interrupt)) keyboard_interrupt_key(KeyboardInterrupt *s) {
     CLI;
     dbg("keyboard_interrupt_key()\n");
     unsigned char status;

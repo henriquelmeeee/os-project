@@ -15,6 +15,29 @@
 #define i16 signed short
 #define i8 signed char
 
+#define IRET \
+  outb(0x20, 0x20); \
+  outb(0xA0, 0x20); \
+  __asm__ volatile( \
+      "add $8, %rsp;" \
+      "pop %r15;" \
+      "pop %r14;" \
+      "pop %r13;" \
+      "pop %r12;" \
+      "pop %r11;" \
+      "pop %r10;" \
+      "pop %r9;" \
+      "pop %r8;" \
+      "pop %rbp;" \
+      "pop %rdi;" \
+      "pop %rsi;" \
+      "pop %rdx;" \
+      "pop %rcx;" \
+      "pop %rbx;" \
+      "pop %rax;" \
+      "iretq;" \
+      )
+
 #include "../panic.h"
 #include "../Memory/Base_Mem.h"
 

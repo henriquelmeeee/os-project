@@ -1,4 +1,12 @@
-#include "Stack.h"
+#pragma once
 
-extern "C" void i_spurious(struct State *s);
-extern "C" void __attribute__((interrupt)) i_fpuerr(struct ExceptionState *s);
+#ifndef PRELOAD
+#define PRELOAD
+
+struct SpuriousInterrupt {
+
+};
+
+extern "C" void i_spurious(SpuriousInterrupt *s);
+//extern "C" void __attribute__((interrupt)) i_fpuerr(struct ExceptionState *s);
+#endif

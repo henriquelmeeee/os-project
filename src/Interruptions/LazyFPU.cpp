@@ -1,10 +1,11 @@
-#include <Tasks/Process.h>
-#include <Utils/Base.h>
+#include "../Tasks/Process.h"
+#include "../Utils/Base.h"
 
 void lazy_fpu_context_switch() {
   CLI;
+  __asm__ volatile("hlt");
   
-  if(last_proc_used_fpu != 0)
+  /*if(last_proc_used_fpu != 0)
     __asm__ volatile(
         "fnsave %0"
         : "=m" (last_proc_used_fpu->fpu_state)
@@ -32,7 +33,7 @@ void lazy_fpu_context_switch() {
     
   }
 
-  last_proc_used_fpu = proc_current;
+  last_proc_used_fpu = proc_current;*/
 
   STI;
 }

@@ -1,13 +1,16 @@
 #include "../Tasks/Process.h"
 #include "../Utils/Base.h"
+#include "../Memory/Base_Mem.h"
+
+struct TimerInterrupt {
+
+};
 
 using namespace Process;
 
-// temporary
-#define RegisterState char
-
-void __attribute__((interrupt)) quantum_interruption_handle(RegisterState *state) {
+void __attribute__((interrupt)) quantum_interruption_handle(TimerInterrupt *s) {
   CLI;
+  __asm__ volatile("hlt");
   // TODO semáforo para garantir q não haverá condição de corrida
   // pq se houver, o proximo processo da lista escolhido pode ser um que na mesma hora seja escolhido pelo 
   // outro processador(core)
@@ -23,23 +26,23 @@ void __attribute__((interrupt)) quantum_interruption_handle(RegisterState *state
 
   // Salvar registradores
   
-  proc_current->regs_state = *state;
+  //proc_current->regs_state = *state;
 
   // TODO calcular prioridade desse processo atual
 
-  Process::Process* next_process = procs[0]; // TODO precisa pegar o próximo processo na lista
+  SysProc next_process = procs[0]; // TODO precisa pegar o próximo processo na lista
   __asm__ volatile(
       "mov %0, %%cr3"
-      : "=A" (next_process->PML4)
+      : "=A" (next_process.PML4)
       // cr3 = pti next proc
       );
   
-  __asm__ volatile(
+  /*__asm__ volatile(
       "jmp %0"
       : "=r" (next_process->regs_state.rip)
       :
       :
-      );
+      );*/
   
 
 }

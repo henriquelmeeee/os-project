@@ -1,7 +1,6 @@
-#include "Stack.h"
 #include "../Utils/Base.h"
 
-extern "C" __attribute__((interrupt)) void i_fpuerr(struct ExceptionState *s) {
+extern "C" __attribute__((interrupt)) void i_fpuerr(u64 *teste) {
   CLI;
   dbg("a");
   __asm__ volatile("hlt");

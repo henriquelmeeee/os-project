@@ -112,11 +112,9 @@ namespace Initialize {
       for(int i = 0; i<255; i++)
         IDT_append(reinterpret_cast<u64>(i_spurious), i);
 
-      u64 fpu_err_addr = reinterpret_cast<u64>(i_fpuerr);
       u64 keyboard_addr = reinterpret_cast<u64>(Drivers::Keyboard::keyboard_interrupt_key);
 
       IDT_append(keyboard_addr, 31);
-      IDT_append(fpu_err_addr, 16);
       return true;
     }
 
@@ -231,18 +229,11 @@ extern "C" void kmain() {
   init_serial();
   
   dbg("kmain()-> Kernel iniciando\n");
+  char* txtaddr = (char*) 0xB8000;
 
-
-  #ifndef GRAPHICAL_MODE
-    dbg("kmain()-> Modo de texto está habilitado\n");
-    char* txtaddr = (char*)0xB8000;
-    Text::text_clear();
-    Text::Write("Kernel loaded");
-    dbg("kmain()-> AVISO Modo de texto habilitado\n");
-  #else
-    dbg("kmain() -> Modo gráfico está habilitado\n");
-    //Graphics::draw_window();
-  #endif
+  Text::text_clear();
+  Text::Write("Loading kernel", 2);
+  Text::NewLine();
 
   /*
     * Agora, nós precisamos configurar uma nova tabela de paginação base
@@ -335,7 +326,14 @@ extern "C" void kmain() {
       : "r" (kPML4)
       :"rax","memory"
       );
+
+  Text::Write("Pagination for kernel enabled, initializing devices...", 1);
+  Text::NewLine();
+
   dbg("kmain()-> Tabela de paginação recriada com sucesso\n");
+
+  
+
 
   dbg("kmain()-> Criando regiões para stack, heap e data\n");
 
