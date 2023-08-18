@@ -145,16 +145,16 @@ u32 getNewPid() {
 bool CreateProcess(const char* name, u16 privilege, const char* fs_binary_location) {
   if(privilege != 0){ throw_panic(0, "CreateProcess::privilege>0: not yet implemented");}
 
-  Binary *bin = FS::LoadBinary(fs_binary_location);
+  //Binary *bin = FS::LoadBinary(fs_binary_location);
   //if(bin->magic_number != BINARY_MAGIC_NUMBER)
     //return false;
 
-  Process::SysProc new_process = Process::SysProc(name, bin, getNewPid());
+  //Process::SysProc new_process = Process::SysProc(name, bin, getNewPid());
 
   //if ( (new_process.TextSection == 0) || (new_process.DataSection == 0) )
     //return false;
 
-  kfree(bin);
+  //kfree(bin);
 
   return true;
 }

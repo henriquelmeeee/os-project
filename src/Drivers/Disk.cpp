@@ -30,6 +30,10 @@ void outt(unsigned short port, unsigned char data) {
   __asm__ volatile("outb %0, %1" : : "a"(data), "Nd"(port));
 }
 
+void outw(unsigned short port, unsigned short data) {
+  __asm__ volatile("outw %0, %1" : : "a"(data), "Nd"(port));
+}
+
 unsigned short inw(unsigned short port) {
   unsigned short result;
   __asm__ volatile("inw %%edx, %%ax" : "=a" (result) : "d" (port));
@@ -43,6 +47,7 @@ inline void wait_for_disk_controller_w() {
 inline void wait_for_disk_controller_r() {
   dbg("wait_for_disk_controller_r()-> Esperando disco...\n");
   while((inw(STATUS_PORT) & 0x80) != 0) {}
+  
 }
 
 void write_to_sector(short* bytes, unsigned int sector) {
@@ -59,7 +64,7 @@ void write_to_sector(short* bytes, unsigned int sector) {
   
   for(int i = 0; i < 256; i+=2) {
     // ele envia 2 bytes por vez para a porta de dados
-    outt(DATA_PORT, bytes[i]);
+    outw(DATA_PORT, bytes[i]);
   }
 }
 
@@ -72,8 +77,6 @@ void write_to_sector(short* bytes, unsigned int sector) {
 
 void read_from_sector(char* buffer, unsigned int sector) {
   wait_for_disk_controller_r();
-
-
 
   char tmp_buf[512];
   itos((sector>>8)&0xFF, tmp_buf);

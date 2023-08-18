@@ -112,9 +112,9 @@ namespace Initialize {
       for(int i = 0; i<255; i++)
         IDT_append(reinterpret_cast<u64>(i_spurious), i);
 
-      u64 keyboard_addr = reinterpret_cast<u64>(Drivers::Keyboard::keyboard_interrupt_key);
+      //u64 keyboard_addr = reinterpret_cast<u64>(Drivers::Keyboard::keyboard_interrupt_key);
 
-      IDT_append(keyboard_addr, 31);
+      //IDT_append(keyboard_addr, 31);
       return true;
     }
 
@@ -232,7 +232,7 @@ extern "C" void kmain() {
   char* txtaddr = (char*) 0xB8000;
 
   Text::text_clear();
-  Text::Write("Loading kernel", 2);
+  Text::Write("Loading kernel", 3);
   Text::NewLine();
 
   /*
@@ -327,7 +327,7 @@ extern "C" void kmain() {
       :"rax","memory"
       );
 
-  Text::Write("Pagination for kernel enabled, initializing devices...", 1);
+  Text::Write("Pagination for kernel enabled, initializing devices...", 3);
   Text::NewLine();
 
   dbg("kmain()-> Tabela de paginação recriada com sucesso\n");
@@ -347,7 +347,18 @@ extern "C" void kmain() {
   
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
-  STI;
+  
+  FS _filesystem;
+  Text::NewLine();
+
+  //Text::Write("Kernel loaded, invoking shell.", 2);
+  Text::Write("Files in filesystem:", 2);
+  Text::NewLine();
+
+  //for(int i = 0; i < _filesystem.total_inodes_amount; i++)
+    //dbg("a");
+    //Text::Write(_filesystem.inodes[i].name);
+
   while(true);
  
   

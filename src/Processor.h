@@ -35,7 +35,6 @@ struct KeyboardInterrupt {
 class Keyboard : public PS2 {
   public:
     
-    void __attribute__((interrupt)) handler(KeyboardInterrupt* s) {}
 
     Keyboard() {}
 };

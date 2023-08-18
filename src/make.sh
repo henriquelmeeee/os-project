@@ -24,7 +24,7 @@ g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Memory/Heap/Heap.c
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Memory/Base.cpp -o bin/tmp/mbase.o
 
 
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Filesystem/Filesystem.cpp -o bin/tmp/fs.o
+#g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Filesystem/Filesystem.cpp -o bin/tmp/fs.o
 
 
 echo "Compilando Drivers"
@@ -44,7 +44,7 @@ g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c T
 
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Utils/Base.cpp -o bin/tmp/base.o
 
-ld -nostdlib -static -T KernelLinker.ld bin/tmp/kernel.o bin/tmp/fpuerr.o bin/tmp/syscalls.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/fs.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/heap.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o bin/tmp/mbase.o -o bin/kernel.bin
+ld -nostdlib -static -T KernelLinker.ld bin/tmp/kernel.o bin/tmp/fpuerr.o bin/tmp/syscalls.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/heap.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o bin/tmp/mbase.o -o bin/kernel.bin
 
 echo "Compilando shell"
 
@@ -88,7 +88,7 @@ mv tmp.prekernel.asm prekernel.asm
 dd if=bin/final of=../Build/disk.img bs=512 count=20000 conv=notrunc
 dd if=bin/kernel.bin of=../Build/disk.img bs=512 seek=100 conv=notrunc
 
-dd if=bin/shell.bin of=../Build/disk.img bs=512 seek=500 conv=notrunc
+#dd if=bin/shell.bin of=../Build/disk.img bs=512 seek=500 conv=notrunc
 
 file_path="../Build/disk.img"
 block_size=512
@@ -106,8 +106,12 @@ fi
 
 truncate ../Build/disk.img --size=100M
 
-rm ../Build/disk.vdi
-VBoxManage convertfromraw --format VDI ../Build/disk.img ../Build/disk.vdi
-VBoxManage internalcommands sethduuid ../Build/disk.vdi
+#rm ../Build/disk.vdi
+#VBoxManage convertfromraw --format VDI ../Build/disk.img ../Build/disk.vdi
+#VBoxManage internalcommands sethduuid ../Build/disk.vdi
+
+echo "Building user-land stuff"
+python3 build_userland.py
+
 sleep 1
 sh run.sh

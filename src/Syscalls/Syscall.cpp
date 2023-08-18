@@ -3,7 +3,6 @@
 #include "../Tasks/Process.h"
 #include "../Memory/Base_Mem.h"
 #include "../Processor.h"
-#include "../Interruptions/Stack.h"
 #include "Syscall.h"
 
 #define TOTAL_AMOUNT_OF_SYSCALLS 2
