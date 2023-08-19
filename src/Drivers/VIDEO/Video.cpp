@@ -45,6 +45,12 @@ unsigned char GenericWindow[30][95][3];
 namespace Text{
 char* last_char = (char*)0xB8000;
 
+void NewLine() {
+  //video_height = (volatile unsigned int)1 + video_height;
+  video_height+=1;
+  video_width = (volatile unsigned int)0;
+}
+
 void Write(const char* string, char color = 0x07) {
   for(int i = 0; string[i]!=0; i++) {
      video_addr[(video_height * DEFAULT_VIDEO_WIDTH + video_width) * 2] = string[i];
@@ -60,12 +66,12 @@ void Write(const char* string, char color = 0x07) {
      }
   }
 }
-
-void NewLine() {
-  //video_height = (volatile unsigned int)1 + video_height;
-  video_height+=1;
-  video_width = (volatile unsigned int)0;
+void Writeln(const char* string, char color = 0x07) {
+  Write(string, color);
+  NewLine();
 }
+
+
 
 void text_clear() {
   for(int i = 0; i<3200; i++) {

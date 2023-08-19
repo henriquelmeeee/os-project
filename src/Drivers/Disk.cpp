@@ -46,8 +46,9 @@ inline void wait_for_disk_controller_w() {
 
 inline void wait_for_disk_controller_r() {
   dbg("wait_for_disk_controller_r()-> Esperando disco...\n");
-  while((inw(STATUS_PORT) & 0x80) != 0) {}
-  
+  while((inw(STATUS_PORT) & 0x80) != 0) {} // BSY
+  unsigned char status;
+  //while(!(status & 0x08)) status = inb(STATUS_PORT);
 }
 
 void write_to_sector(short* bytes, unsigned int sector) {

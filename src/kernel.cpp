@@ -30,6 +30,7 @@ extern "C" void kmain();
 #include "Drivers/Keyboard.h"
 
 #include "Processor.h"
+#include "HAL/HAL.h"
 
 unsigned long long mem_usage = 0;
 
@@ -39,21 +40,12 @@ volatile void sleep(unsigned long long ticks) {
   for(unsigned long long i = 0; i<ticks; i++) {for (volatile int j = 0; j<1000000; j++){}}
 }
 
-struct HardwareInformation {
-  unsigned int ram;
-};
-// Bootloader carrega a informação da quantidade de RAM no endereço "15000"
-// então nós devemos recuperar o valor nesse endereço 
-
-unsigned long long TOTAL_RAM = 0;
-
 unsigned long *pages_in_use;
 
 struct IDT_ptr {
   unsigned short limit;
   unsigned long base;
 } __attribute__((packed));
-
 
 alignas(4096) unsigned long IDT_entries[256];
 
@@ -199,19 +191,6 @@ namespace Initialize {
 
 #define fo (char)15
 
-#define PORT (char)0x3f8 /* COM1 register, for control */
-
-void init_serial() {
-   outb(PORT + 1, (char)0x00);    // Disable all interrupts
-   outb(PORT + 3, (char)0x80);    // Enable DLAB (set baud rate divisor)
-   outb(PORT + 0, (char)0x03);    // Set divisor to 3 (lo byte) 38400 baud
-   outb(PORT + 1, (char)0x00);    //                  (hi byte)
-   outb(PORT + 3, (char)0x03);    // 8 bits, no parity, one stop bit
-   outb(PORT + 2, (char)0xC7);    // Enable FIFO, clear them, with 14-byte threshold
-   outb(PORT + 4, (char)0x0B);    // IRQs enabled, RTS/DSR set
-}
-
-
 alignas(4096) Memory::PML4Entry kPML4[512];
 alignas(4096) Memory::PDPTEntry kPDPT[512];
 alignas(4096) Memory::PDEntry kPD[512];
@@ -221,19 +200,24 @@ Memory::PhysicalRegion physical_stack;
 Memory::PhysicalRegion physical_heap;
 Memory::PhysicalRegion physical_data;
 
+
+HAL::System system = HAL::System();
+
 extern "C" void kmain() {
   CLI;
-  mem_usage+=KERNEL_SIZE;
-  TOTAL_RAM = 2 GB;
-  
-  init_serial();
-  
-  dbg("kmain()-> Kernel iniciando\n");
-  char* txtaddr = (char*) 0xB8000;
 
   Text::text_clear();
-  Text::Write("Loading kernel", 3);
-  Text::NewLine();
+  Text::Writeln("Loading kernel", 3);
+
+  mem_usage+=KERNEL_SIZE;
+
+  if(!(system.init_serial_for_dbg()))
+      Text::Writeln("Warning: cannot initialize serial for debugging", 0x4);
+
+  system = HAL::System();
+
+  dbg("kmain()-> Kernel iniciando\n");
+  char* txtaddr = (char*) 0xB8000;
 
   /*
     * Agora, nós precisamos configurar uma nova tabela de paginação base
@@ -327,14 +311,9 @@ extern "C" void kmain() {
       :"rax","memory"
       );
 
-  Text::Write("Pagination for kernel enabled, initializing devices...", 3);
-  Text::NewLine();
+  Text::Writeln("Pagination for kernel enabled, initializing devices...", 3);
 
   dbg("kmain()-> Tabela de paginação recriada com sucesso\n");
-
-  
-
-
   dbg("kmain()-> Criando regiões para stack, heap e data\n");
 
   physical_stack        = kmmap();
@@ -348,12 +327,11 @@ extern "C" void kmain() {
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
   
-  FS _filesystem;
+  FS filesystem;
   Text::NewLine();
 
   //Text::Write("Kernel loaded, invoking shell.", 2);
-  Text::Write("Files in filesystem:", 2);
-  Text::NewLine();
+  Text::Writeln("Files in filesystem:", 2);
 
   //for(int i = 0; i < _filesystem.total_inodes_amount; i++)
     //dbg("a");

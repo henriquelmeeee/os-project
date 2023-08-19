@@ -52,7 +52,7 @@ class FS {
 
       for(int i = 0; i<total_inodes_amount; i++) {
         Inode inode = {};
-        read_from_sector((char*)&inode, 200+i); // FIXME 201+1 instead of 200+i
+        read_from_sector((char*)&inode, 200); // FIXME 201+1 instead of 200
         Text::Write("-> File found: ");
         Text::Write(inode.name);
         __asm__ volatile("hlt");

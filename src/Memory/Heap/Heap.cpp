@@ -1,5 +1,6 @@
 #include "../../Utils/Base.h"
 #include "../../panic.h"
+#include "../../HAL/HAL.h"
 
 #define HEAP_BASE_ADDRESS (unsigned long) (500*1024*1024) // 500MB
 #define HEAP_MAX_ADDRESS (unsigned long) (1024*1024*1024) // 1GB
@@ -13,7 +14,7 @@ void inline append_chunk(struct Chunk* addr) {
 char itos_buffer[32];
 
 extern "C" void* kmalloc(unsigned int size) {
-  if(size > (TOTAL_RAM - mem_usage)) {
+  if(size > (system.TOTAL_RAM - mem_usage)) {
     return (void*)0;
   }
   char* addr = (char*)((unsigned long)HEAP_BASE_ADDRESS);

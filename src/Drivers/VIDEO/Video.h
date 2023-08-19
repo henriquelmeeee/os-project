@@ -2,6 +2,7 @@
 #define VIDEO
 namespace Text{
 void Write(const char* string, char color = 0x07);
+void Writeln(const char* string, char color = 0x07);
 void NewLine();
 void text_clear();
 }

@@ -8,7 +8,6 @@
 #include "../panic.h"
 #include "Process.h"
 namespace Process{
-  unsigned long long TOTAL_RAM = 0;
 
   #define vPage i16
 

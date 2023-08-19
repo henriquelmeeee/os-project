@@ -29,7 +29,7 @@ outw(0x3D4, 0xE715); // Start Address Low
 outw(0x3D4, 0x0616); // Location of the Cursor Start
 outw(0x3D4, 0xE317); // Text-Mode Blinking
 #endif
-  Text::text_clear();
+  Text::NewLine();
   dbg("!!!PANIC!!!\n");
   dbg(msg);
   dbg("\n");
