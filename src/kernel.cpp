@@ -42,43 +42,10 @@ volatile void sleep(unsigned long long ticks) {
 
 unsigned long *pages_in_use;
 
-struct IDT_ptr {
-  unsigned short limit;
-  unsigned long base;
-} __attribute__((packed));
-
-alignas(4096) unsigned long IDT_entries[256];
-
 void halt() {
   __asm__ volatile(
       "hlt"
       );
-}
-
-bool IDT_append(u64 addr, i32 offset) {
-  /*
-  IDT_entries[offset] = \
-    {
-      .base_lo = static_cast<u16>(addr & (u64) 0xFFFF),
-      .sel = (unsigned short)0x08,
-      .always0 = (char)0,
-      .flags = (unsigned char)0x8E,
-      .base_mid = static_cast<u16>((addr>>16) & (u64)0xFFFF),
-      .base_hi = static_cast<u32>(addr>>32),
-      .reserved = (u32)0,
-    };
-  */
-  u16 selector = 0x08;
-  u8 flags = 0x8E;
-  u64 entry = ((u64)flags << 40) |
-    ((u64)selector << 16) |
-    (addr & 0xFFFF) |
-    ((addr & 0xFFFF0000) << 32) |
-    ((u64)(addr >> 32) << 48);
-
-  IDT_entries[offset] = entry;
-
-  return true;
 }
 
 void disable_irq(int irq) {
@@ -95,100 +62,6 @@ void disable_irq(int irq) {
     outb(port, value);        
 }
 
-namespace Initialize {
-  namespace FirstStage {
-    bool init_idt_entries() {
-      for(auto entry : IDT_entries)
-        __builtin_memset(&entry, 0, 8);
-
-      for(int i = 0; i<255; i++)
-        IDT_append(reinterpret_cast<u64>(i_spurious), i);
-
-      //u64 keyboard_addr = reinterpret_cast<u64>(Drivers::Keyboard::keyboard_interrupt_key);
-
-      //IDT_append(keyboard_addr, 31);
-      return true;
-    }
-
-    bool init_idt_ptr(u16 size) {
-      // Inicializa os descritores da IDT
-      volatile struct {
-        u16 length;
-        u64 base;
-      } __attribute__((packed)) IDTR = { size, (u64)IDT_entries};
-      __asm__ volatile (
-          "lidt %0"
-          :
-          : "m" (IDTR) // "lidt &IDTR"
-          );
-      dbg("Initialize::FirstStage::init_idt_ptr()-> finalizado\n");
-      return true;
-    }
-    
-    bool init_pages_in_use() { // aloca uma chunk para a array de páginas em uso na Heap
-      pages_in_use = (unsigned long*)kmalloc(PAGE_SIZE);
-      return true;
-    }
-
-    bool init_idt_config() {
-      #define PIC1_COMMAND 0x20
-      #define PIC1_DATA    0x21
-      #define PIC2_COMMAND 0xA0
-      #define PIC2_DATA    0xA1
-      #define PIC_EOI      0x20
-      #define PIC_INIT     0x11
-      #define PIC_ICW4     0x01 // Interrupt control word
-
-      outb(PIC1_COMMAND, PIC_INIT);
-      outb(PIC2_COMMAND, PIC_INIT);
-    
-      // ICW2: Definir o vetor de início
-      outb(PIC1_DATA, 32);   // Definir o vetor de interrupção inicial do PIC1 para 32 (0x20)
-      outb(PIC2_DATA, 40);    // Definir PIC2 para ser acionado pela linha IRQ2 do PIC1 (40)
-      
-      // ICW3: Informar ao PIC1 que o PIC2 está em IRQ2 e informar ao PIC2 seu número de cascata
-      outb(PIC1_DATA, 0x04); 
-      outb(PIC2_DATA, 0x02);
-
-      outb(PIC1_DATA, PIC_ICW4);
-      outb(PIC2_DATA, PIC_ICW4);
-
-      // Desmascarando interrupção do teclado
-      
-      outb(PIC1_DATA, 0xFE);
-      outb(PIC2_DATA, 0xFF);
-
-      return true;
-    }
-    bool init() {
-      TRY(init_idt_entries(), ErrorType{CRITICAL}, "An error occurred while trying to initialize the IDT");
-      TRY(init_idt_ptr(256), ErrorType{CRITICAL}, "An error occurred while trying to initialize the IDT (lidt)");
-      TRY(init_idt_config(), ErrorType{CRITICAL}, "An error occurred while trying to configure the IDT");
-      //TRY(init_pages_in_use(), ErrorType{CRITICAL});
-
-      return true;
-    }
-  }
-  namespace SecondStage {
-    bool init_procs() {
-      //if(!(Process::init())) 
-        //return false;
-      //if(!(Process::CreateProcess("initd", 0)))
-      return true;
-    return true;
-        return false;
-      return true;
-    }
-    bool init() {
-      return true;
-      //TRY(FS::map_files_on_boot(), ErrorType{CRITICAL}, "Critical file \"initd\" not found");
-      // se não houver nenhum arquivo, então não há nem mesmo o processo "init"
-      TRY(init_procs(), ErrorType{CRITICAL}, "Unable to initialize task system");
-      return true;
-    }
-  }
-}
-
 #define fo (char)15
 
 alignas(4096) Memory::PML4Entry kPML4[512];
@@ -200,7 +73,6 @@ Memory::PhysicalRegion physical_stack;
 Memory::PhysicalRegion physical_heap;
 Memory::PhysicalRegion physical_data;
 
-
 HAL::System system = HAL::System();
 
 extern "C" void kmain() {
@@ -209,15 +81,21 @@ extern "C" void kmain() {
   Text::text_clear();
   Text::Writeln("Loading kernel", 3);
 
+  system = HAL::System();
+  
   mem_usage+=KERNEL_SIZE;
 
   if(!(system.init_serial_for_dbg()))
       Text::Writeln("Warning: cannot initialize serial for debugging", 0x4);
 
-  system = HAL::System();
+  pages_in_use = (unsigned long*)kmalloc(PAGE_SIZE);
 
   dbg("kmain()-> Kernel iniciando\n");
   char* txtaddr = (char*) 0xB8000;
+
+  if(!(system.init_idt())) {
+    throw_panic(0, "Failed to initialize IDT");
+  } 
 
   /*
     * Agora, nós precisamos configurar uma nova tabela de paginação base
@@ -299,7 +177,7 @@ extern "C" void kmain() {
   ASSERT(kPD[0].flag_bits.present    == 1,   -ENOPD,    "Failed to create PD");
   ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT,  "Failed to create PDPT");
   ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4,  "Failed to create PML4");
-  
+
   dbg("kmain()-> Recriando tabela de paginação\n");
   __asm__ volatile( 
       //"mov %%cr4, %%rax;" 
@@ -320,7 +198,8 @@ extern "C" void kmain() {
   physical_heap         = kmmap();
   physical_data         = kmmap();
 
-  TRY(Initialize::FirstStage::init(), ErrorType{CRITICAL}, "FirstStage init failed");
+
+  
   //TRY(Initialize::SecondStage::init(), ErrorType{CRITICAL}, "SecondStage init failed");
   //TRY(Process::init(), ErrorType{CRITICAL}, "Tasks initialization failed");
   
@@ -330,13 +209,15 @@ extern "C" void kmain() {
   FS filesystem;
   Text::NewLine();
 
-  //Text::Write("Kernel loaded, invoking shell.", 2);
-  Text::Writeln("Files in filesystem:", 2);
+  Text::Writeln("Files in filesystem:", 3);
 
-  //for(int i = 0; i < _filesystem.total_inodes_amount; i++)
-    //dbg("a");
-    //Text::Write(_filesystem.inodes[i].name);
+  for(int i = 0; i < filesystem.total_inodes_amount; i++) {
+    dbg("a");
+    Text::Writeln(filesystem.inodes[i].name);
+  }
 
+  Text::NewLine();
+  Text::Writeln("Kernel: Shell will be spawned", 2);
   while(true);
  
   
