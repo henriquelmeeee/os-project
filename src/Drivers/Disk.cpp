@@ -19,7 +19,7 @@
 #define STATUS_WRITINGSECTOR us 0x30
 #define STATUS_READINGSECTOR us 0x20
 
-#define DISK_MODE "LBA28" // LBA48 = 48 bits sector, disk more larger
+#define DISK_MODE 48 // LBA48 = 48 bits sector, disk more larger
 
 // out -> write data
 // in -> read data
@@ -48,7 +48,7 @@ inline void wait_for_disk_controller_r() {
   dbg("wait_for_disk_controller_r()-> Esperando disco...\n");
   while((inw(STATUS_PORT) & 0x80) != 0) {} // BSY
   unsigned char status;
-  //while(!(status & 0x08)) status = inb(STATUS_PORT);
+  while(!(status & 0x08)) status = inb(STATUS_PORT);
 }
 
 void write_to_sector(short* bytes, unsigned int sector) {
@@ -76,7 +76,14 @@ void write_to_sector(short* bytes, unsigned int sector) {
 // que guarda os bytes do setor é atualizado pros próximos
 // 2 bytes.
 
-void read_from_sector(char* buffer, unsigned int sector) {
+#define LBA48_LOW_PORT 0x1F3
+#define LBA48_MID_PORT 0x1F4
+#define LBA48_HIGH_PORT 0x1F5
+#define LBA48_SECTOR_COUNT_PORT 0x1F2
+#define LBA48_DRIVE_HEAD_PORT 0x1F6
+#define LBA48_READING 0x24
+
+void read_from_sector(char* buffer, unsigned long long sector) {
   wait_for_disk_controller_r();
 
   char tmp_buf[512];
@@ -84,27 +91,45 @@ void read_from_sector(char* buffer, unsigned int sector) {
   dbg("CYLINDER_LOW_PORT: ");
   dbg(tmp_buf);
   dbg("\n");
+  
+  // TODO FIXME utilizar HAL para facilitar
 
-  outt(DRIVE_HEAD_PORT, (sector >> 24) | 0xE0);
-  outt(SECTOR_COUNT_PORT, (unsigned char)1);
-  outt(SECTOR_NUMBER_PORT, sector & 0xFF);
-  outt(CYLINDER_LOW_PORT, (sector >> 8) & 0xFF);
-  outt(CYLINDER_HIGH_PORT, (sector >> 16) & 0xFF);
-  outt(COMMAND_PORT, STATUS_READINGSECTOR);
-  dbg("read_from_sector()-> Iniciando leitura de disco\n");
-  for(int i = 0; i<256; i+=2){
-    short data_buf = inw(DATA_PORT);
-    if(data_buf == 0) {
-      dbg("..");
-    } else {
-    dbg("!!");
+  if(DISK_MODE == 48) {
+    unsigned short count = 1; 
+    
+    // Bytes mais significativos:
+    outt(LBA48_SECTOR_COUNT_PORT, (count >> 8) & 0xFF);
+    outt(LBA48_HIGH_PORT, (sector >> 40) & 0xFF);
+    outt(LBA48_MID_PORT, (sector >> 32) & 0xFF);
+    outt(LBA48_LOW_PORT, (sector >> 24) & 0xFF);
+    
+    // Bytes menos significativos:
+    outt(LBA48_SECTOR_COUNT_PORT, count & 0xFF);
+    outt(LBA48_LOW_PORT, sector & 0xFF);
+    outt(LBA48_MID_PORT, (sector >> 8) & 0xFF);
+    outt(LBA48_HIGH_PORT, (sector >> 16) & 0xFF);
+
+    outt(LBA48_DRIVE_HEAD_PORT, 0xE0 | ((sector >> 24) & 0x0F));
+
+    outt(COMMAND_PORT, LBA48_READING);
+    
+    dbg("read_from_sector()-> Iniciando leitura de disco\n");
+    for(int i = 0; i<256; i+=2){
+      short data_buf = inw(DATA_PORT);
+      if(data_buf == 0) {
+        dbg("..");
+      } else {
+        dbg("!!");
+      }
+      buffer[i] = (char)(data_buf&0xFF);
+      buffer[i+1] = (char)(data_buf >> 8);
+      unsigned short status = inw(STATUS_PORT);
+      if(status & 0x01) {
+        throw_panic(0, "Disk error");
+      }
     }
-    buffer[i] = (char)(data_buf&0xFF);
-    buffer[i+1] = (char)(data_buf >> 8);
-    unsigned short status = inw(STATUS_PORT);
-    if(status & 0x01) {
-      throw_panic(0, "Disk error");
-    }
+  } else {
+    // NOT IMPLEMENTED YET
   }
   dbg("\n");
 }
