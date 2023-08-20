@@ -48,7 +48,9 @@ inline void wait_for_disk_controller_r() {
   dbg("wait_for_disk_controller_r()-> Esperando disco...\n");
   while((inw(STATUS_PORT) & 0x80) != 0) {} // BSY
   unsigned char status;
-  while(!(status & 0x08)) status = inb(STATUS_PORT);
+  //do {
+    //status = inw(STATUS_PORT);
+  //} while (!(status & 0x08));
 }
 
 void write_to_sector(short* bytes, unsigned int sector) {
@@ -85,7 +87,6 @@ void write_to_sector(short* bytes, unsigned int sector) {
 
 void read_from_sector(char* buffer, unsigned long long sector) {
   wait_for_disk_controller_r();
-
   char tmp_buf[512];
   itos((sector>>8)&0xFF, tmp_buf);
   dbg("CYLINDER_LOW_PORT: ");
@@ -96,12 +97,13 @@ void read_from_sector(char* buffer, unsigned long long sector) {
 
   if(DISK_MODE == 48) {
     unsigned short count = 1; 
-    
+    outb(COMMAND_PORT, 0xE7);
     // Bytes mais significativos:
-    outt(LBA48_SECTOR_COUNT_PORT, (count >> 8) & 0xFF);
-    outt(LBA48_HIGH_PORT, (sector >> 40) & 0xFF);
-    outt(LBA48_MID_PORT, (sector >> 32) & 0xFF);
+    outt(LBA48_SECTOR_COUNT_PORT, 0);
     outt(LBA48_LOW_PORT, (sector >> 24) & 0xFF);
+    outt(LBA48_MID_PORT, (sector >> 32) & 0xFF);
+    outt(LBA48_HIGH_PORT, (sector >> 40) & 0xFF);
+    outt(LBA48_DRIVE_HEAD_PORT, 0xE0 | ((sector >> 24) & 0x0F | 0x40));
     
     // Bytes menos significativos:
     outt(LBA48_SECTOR_COUNT_PORT, count & 0xFF);

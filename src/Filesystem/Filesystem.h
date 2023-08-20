@@ -47,20 +47,20 @@ class FS {
       Text::Write("Filesystem: Inode count read is ", 2);
       char count[16];
       itos(total_inodes_amount, count);
-      Text::Write(count);
-      Text::NewLine();
+      Text::Writeln(count);
 
       for(int i = 0; i<total_inodes_amount; i++) {
-        Inode inode = {};
-        read_from_sector((char*)&inode, 201+i);
+        // HARDCODED !!!
+        char inode_buffer[512];
+        read_from_sector(inode_buffer, 201+i);
+        Inode inode = {*((unsigned int*)inode_buffer), "teste"};
         Text::Write("-> File found: ");
         Text::Write(inode.name);
         __asm__ volatile("hlt");
         //inodes.append(inode);
       }
 
-      Text::Write("Filesystem: Inodes mapped", 2);
-      Text::NewLine();
+      Text::Writeln("Filesystem: Inodes mapped", 2);
     }
 };
 

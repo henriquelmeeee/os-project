@@ -5,6 +5,9 @@
  * 3->4GB         -> Static Data related (userspace)
 */
 
+// FIXME se eu ler um setor aleatorio agora tipo o setor 2, na hora de ler o setor 200
+// ele vai pegar um valor meio q aleatorio parece ser algo relacionado ao cache sla
+
 extern "C" void kmain();
 #define KERNEL_SIZE 26112
 // Drivers:
@@ -77,7 +80,7 @@ HAL::System system = HAL::System();
 
 extern "C" void kmain() {
   CLI;
-
+  
   Text::text_clear();
   Text::Writeln("Loading kernel", 3);
 

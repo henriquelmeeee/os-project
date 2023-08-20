@@ -106,7 +106,7 @@ namespace Process{
       //TODO resolver problema em que uma chamada à memcpy() acontece se eu fizer atribuição direta
       //procs[0] = SysProc("init", "init", (u32)0);
       Binary* shell;
-      read_from_sector((char*)shell, 500);
+      read_from_sector((char*)shell, (unsigned long long) 500);
       dbg("Process::init()-> shell carregado\n");
       procs[0] = SysProc("Shell", shell, 1);
 
