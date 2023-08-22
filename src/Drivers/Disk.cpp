@@ -87,6 +87,8 @@ void write_to_sector(short* bytes, unsigned int sector) {
 
 void read_from_sector(char* buffer, unsigned long long sector) {
   wait_for_disk_controller_r();
+  dbg("todo read_from_sector");
+  __asm__ volatile("hlt");
   char tmp_buf[512];
   itos((sector>>8)&0xFF, tmp_buf);
   dbg("CYLINDER_LOW_PORT: ");
@@ -95,25 +97,24 @@ void read_from_sector(char* buffer, unsigned long long sector) {
   
   // TODO FIXME utilizar HAL para facilitar
 
-  if(DISK_MODE == 48) {
+  /*if(DISK_MODE == 48) {
     unsigned short count = 1; 
     outb(COMMAND_PORT, 0xE7);
     // Bytes mais significativos:
-    outt(LBA48_SECTOR_COUNT_PORT, 0);
-    outt(LBA48_LOW_PORT, (sector >> 24) & 0xFF);
-    outt(LBA48_MID_PORT, (sector >> 32) & 0xFF);
-    outt(LBA48_HIGH_PORT, (sector >> 40) & 0xFF);
-    outt(LBA48_DRIVE_HEAD_PORT, 0xE0 | ((sector >> 24) & 0x0F | 0x40));
+    outb(LBA48_SECTOR_COUNT_PORT, 0);
+    outb(LBA48_LOW_PORT, (sector >> 24) & 0xFF);
+    outb(LBA48_MID_PORT, (sector >> 32) & 0xFF);
+    outb(LBA48_HIGH_PORT, (sector >> 40) & 0xFF);
+    outb(LBA48_DRIVE_HEAD_PORT, 0x40 | ((sector >> 24) & 0x0F));
     
     // Bytes menos significativos:
-    outt(LBA48_SECTOR_COUNT_PORT, count & 0xFF);
-    outt(LBA48_LOW_PORT, sector & 0xFF);
-    outt(LBA48_MID_PORT, (sector >> 8) & 0xFF);
-    outt(LBA48_HIGH_PORT, (sector >> 16) & 0xFF);
+    outb(LBA48_SECTOR_COUNT_PORT, count & 0xFF);
+    outb(LBA48_LOW_PORT, sector & 0xFF);
+    outb(LBA48_MID_PORT, (sector >> 8) & 0xFF);
+    outb(LBA48_HIGH_PORT, (sector >> 16) & 0xFF);
+    outb(LBA48_DRIVE_HEAD_PORT, 0xE0 | ((sector >> 24) & 0x0F));
 
-    outt(LBA48_DRIVE_HEAD_PORT, 0xE0 | ((sector >> 24) & 0x0F));
-
-    outt(COMMAND_PORT, LBA48_READING);
+    outb(COMMAND_PORT, LBA48_READING);
     
     dbg("read_from_sector()-> Iniciando leitura de disco\n");
     for(int i = 0; i<256; i+=2){
@@ -133,5 +134,5 @@ void read_from_sector(char* buffer, unsigned long long sector) {
   } else {
     // NOT IMPLEMENTED YET
   }
-  dbg("\n");
+  dbg("\n");*/
 }

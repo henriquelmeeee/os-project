@@ -127,6 +127,10 @@ extern unsigned long long mem_usage;
 
 extern "C" void *memcpy(void* dest, const void* src, int size);
 
+/*static inline void outb(unsigned short port, unsigned char value) {
+  __asm__ volatile("outb %0, %1" : : "a"(value), "Nd"(port));
+}*/
+
 #define outb(port, val) \
   __asm__ volatile("outb %0, %1" : : "a"((char)val), "dN"((short)port))
 
