@@ -2,6 +2,7 @@
 #include "Utils/Base.h" // namespace Utils
 #include "DefaultConfig.h"
 #include "Drivers/VIDEO/Video.h"
+#include "HAL/HAL.h"
 
 #define hlt __asm__ volatile("hlt")
 #define newline Text::NewLine();
@@ -34,6 +35,7 @@ outw(0x3D4, 0xE317); // Text-Mode Blinking
   dbg(msg);
   dbg("\n");
   write(("Kernel panic!"));
+  system.dump_stack();
   newline;
   write(msg);
   newline;

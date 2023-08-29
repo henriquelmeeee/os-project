@@ -80,7 +80,7 @@ class ACPI {
     bool enable() {
 
       for(char* i = (char*) BIOS_ENTRY; (unsigned long)i<BIOS_END; i+=16) {
-        if(kstrcmp(i, "RSD PTR")) {
+        if(kstrcmp(i, "RSD PTR ")) {
           Text::Writeln("Kernel: Found Root System Descriptor");
           RSDP* buf = (RSDP*)i;
           rsdp.rsdt_addr = buf->rsdt_addr;
@@ -148,7 +148,22 @@ namespace HAL {
       }
 
       bool dump_stack() {
-        return true; //TODO
+        u64* rbp;
+        __asm__ volatile("mov %%rbp, %0" : "=r"(rbp));
+
+        Text::NewLine();
+        while( *rbp > 1 MB) {
+          char buffer[32];
+          itoh(*(rbp+1), buffer);
+          if(rbp == nullptr)
+            break;
+          Text::Write("Call @0x");
+          Text::Writeln(buffer);
+          rbp = (u64*)*rbp;
+        }
+
+
+        return true;
       }
 
       bool init_serial_for_dbg() {
