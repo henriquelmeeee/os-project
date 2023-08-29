@@ -16,9 +16,104 @@ struct IDT_ptr {
   unsigned long base;
 } __attribute__((packed));
 
+  struct RSDP {
+    char signature[8];
+    char sum;
+    char oem_id[6];
+    char revision;
+    unsigned int rsdt_addr;
+
+    // ACPI 2.0+:
+    u32 length;
+    u64 xsdt_addr;
+    u8 extended_checksum;
+    u8 reserved[3];
+  };
+
+  struct ACPI_STD_HEADER {
+    char signature[4];
+    u32 length;
+    u8 revision;
+    u8 checksum;
+    char oem_id[6];
+    char oem_table_id[8];
+    u32 oem_revision;
+    u32 creator_id;
+    u32 creator_revision;
+  };
+
+  struct RSDT {
+    ACPI_STD_HEADER header;
+    u32 entry[1]; // all of tables in system; check "header length"
+  };
+
+  struct FADT{};
+  struct MADT{};
+  struct SSDT{};
+  struct DSDT{};
+  struct SBST{};
+  struct ECDT{};
+
+
+#define BIOS_ENTRY 0xE0000
+#define BIOS_END 0xFFFFF
+
+class ACPI {
+  private:
+    bool available=false;
+    bool xsdt_in_use=false;
+    u16 rsdt_entries = 0;
+
+    RSDP rsdp; // root system descriptor pointer
+    RSDT rsdt; // root system descriptor table
+    FADT fadt; // fixed ACPI description table
+    MADT madt; // multiple apic description table
+    SSDT ssdt; // secondary system description table
+    DSDT dsdt; // differentiated system description table
+    SBST sbst; // smart battery specification table
+    ECDT ecdt; // embedded controller boot resources table
+
+  public:
+
+    ACPI() {}
+
+    bool enable() {
+
+      for(char* i = (char*) BIOS_ENTRY; (unsigned long)i<BIOS_END; i+=16) {
+        if(kstrcmp(i, "RSD PTR")) {
+          Text::Writeln("Kernel: Found Root System Descriptor");
+          RSDP* buf = (RSDP*)i;
+          rsdp.rsdt_addr = buf->rsdt_addr;
+          if(buf->revision > 0) {
+            xsdt_in_use = true;
+            rsdp.xsdt_addr = buf->xsdt_addr;
+            dbg("XSDT found!\n");
+            // currently we will just use RSDP.
+          }
+
+          RSDT* _buf = (RSDT*)(u64)buf->rsdt_addr;
+          if(_buf == nullptr) {
+            throw_panic(0, "Invalid RSDT pointer (null pointer is not valid)");
+          }
+          rsdt.header = _buf->header;
+          rsdt_entries = rsdt.header.length - sizeof(ACPI_STD_HEADER)/4;
+
+
+          
+
+          available=true;
+          break;
+        }
+      }
+      
+      return available;
+    }
+};
 
 namespace HAL {
   class System {
+    private:
+      ACPI acpi;
     public:
       alignas(4096) unsigned long IDT_entries[256];
       unsigned long long TOTAL_RAM;
@@ -47,6 +142,13 @@ namespace HAL {
           Text::Write("MB");
         }
         Text::Writeln(" of RAM found", 0xe);
+
+        Text::Writeln("HAL: Now trying to initialize ACPI", 0xe);
+        acpi.enable();
+      }
+
+      bool dump_stack() {
+        return true; //TODO
       }
 
       bool init_serial_for_dbg() {

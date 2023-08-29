@@ -54,6 +54,14 @@
 #define GB *1000000000
 #define TB *1000000000000
 
+static inline int kstrcmp(const char *str1, const char *str2) {
+    while (*str1 && (*str1 == *str2)) {
+        str1++;
+        str2++;
+    }
+    return *(unsigned char *)str1 - *(unsigned char *)str2;
+}
+
 struct VBEInfo {
   u16 flags;
   unsigned char windowA, windowB;

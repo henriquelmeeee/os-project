@@ -84,9 +84,6 @@ extern "C" void kmain() {
   Text::text_clear();
   Text::Writeln("Loading kernel", 3);
 
-  char tmp_buffer[512];
-  read_from_sector(tmp_buffer, 201);
-
   system = HAL::System();
   
   mem_usage+=KERNEL_SIZE;
