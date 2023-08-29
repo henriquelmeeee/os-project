@@ -31,8 +31,7 @@ outw(0x3D4, 0x0616); // Location of the Cursor Start
 outw(0x3D4, 0xE317); // Text-Mode Blinking
 #endif
   Text::NewLine();
-  dbg("!!!PANIC!!!\n");
-  dbg(msg);
+  dbg("Kernel panic was released\nError message is %s", msg);
   dbg("\n");
   write(("Kernel panic!"));
   system.dump_stack();

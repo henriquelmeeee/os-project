@@ -146,11 +146,13 @@ extern "C" void *memcpy(void* dest, const void* src, int size);
   unsigned char result; \
   __asm__ volatile("inb %%dx, %%al" : "=a" (result) : "d" ((short)port)); result; })
 
-#define dbg(x) do { \
+/*#define dbg(x) do { \
   const char* str = (x); \
   for(int i = 0; str[i] != '\0'; ++i) \
     outb(0x3F8, str[i]); \
-} while (0)
+} while (0)*/
+
+#include "../kstd/stdio.h"
 
 #define dbgl dbg("\n")
 enum ErrorType {
