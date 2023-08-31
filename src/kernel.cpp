@@ -98,7 +98,7 @@ extern "C" void kmain(BootloaderInfo* info) {
     throw_panic(0, "BootloaderInfo structure pointer is null");
   }
 
-  dbg("BootloaderInfo ptr: %d\n", (unsigned long)info);
+  //FIXME info->boot_type is not working idk
 
   if(info->boot_type == BIOS) {
     Text::Writeln("BIOS boot detected", 9);

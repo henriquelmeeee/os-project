@@ -62,6 +62,18 @@ static inline int kstrcmp(const char *str1, const char *str2) {
     return *(unsigned char *)str1 - *(unsigned char *)str2;
 }
 
+static inline int kstrncmp(const char *str1, const char *str2, int n) {
+    for (int i = 0; i < n; ++i) {
+        if (str1[i] != str2[i]) {
+            return static_cast<unsigned char>(str1[i]) - static_cast<unsigned char>(str2[i]);
+        }
+        if (!str1[i]) { // Check if end of string is reached.
+            break;
+        }
+    }
+    return 0;
+}
+
 struct VBEInfo {
   u16 flags;
   unsigned char windowA, windowB;
@@ -140,7 +152,7 @@ extern "C" void *memcpy(void* dest, const void* src, int size);
 }*/
 
 #define outb(port, val) \
-  __asm__ volatile("outb %0, %1" : : "a"((char)val), "dN"((short)port))
+  __asm__ volatile("outb %0, %1" : : "a"(static_cast<unsigned char>(val)), "dN"(static_cast<unsigned short>(port)))
 
 #define inb(port) ({\
   unsigned char result; \

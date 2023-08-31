@@ -80,8 +80,8 @@ class ACPI {
     bool enable() {
 
       for(char* i = (char*) BIOS_ENTRY; (unsigned long)i<BIOS_END; i+=16) {
-        if(kstrcmp(i, "RSD PTR ")) {
-          Text::Writeln("Kernel: Found Root System Descriptor");
+        if(!kstrncmp(i, "RSD PTR ", 8)) {
+          Text::Writeln("HAL: ACPI: Found Root System Descriptor", 0xe);
           RSDP* buf = (RSDP*)i;
           rsdp.rsdt_addr = buf->rsdt_addr;
           if(buf->revision > 0) {
@@ -95,7 +95,7 @@ class ACPI {
           if(_buf == nullptr) {
             throw_panic(0, "Invalid RSDT pointer (null pointer is not valid)");
           }
-          rsdt.header = _buf->header;
+          //rsdt.header = _buf->header; FIXME why panic?
           rsdt_entries = rsdt.header.length - sizeof(ACPI_STD_HEADER)/4;
 
 

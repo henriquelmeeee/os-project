@@ -1,138 +1,61 @@
 #include "../Utils/Base.h"
-#include "../panic.h"
-
-// ATA (Advanced Technology Attachment) protocol for PATA/SATA disks
-
-#define us (unsigned short)
-
-#define DATA_PORT us 0x1F0 // primary ATA interface
-#define ERROR_PORT us 0x1F1
-#define SECTOR_COUNT_PORT us 0x1F2 // how many sectors we will read?
-#define SECTOR_NUMBER_PORT us 0x1F3
-#define CYLINDER_LOW_PORT us 0x1F4
-#define CYLINDER_HIGH_PORT us 0x1F5
-#define DRIVE_HEAD_PORT us 0x1F6
-#define ALTERNATE_STATUS_PORT us 0x3F6
-#define STATUS_PORT us 0x1F7
-#define COMMAND_PORT us 0x1F7
-
-#define STATUS_WRITINGSECTOR us 0x30
-#define STATUS_READINGSECTOR us 0x20
-
-#define DISK_MODE 48 // LBA48 = 48 bits sector, disk more larger
-
-// out -> write data
-// in -> read data
-
-// TODO colocar isso em Utils/Base.h
-// TODO "outt" é um out temporario, mas é um outb isso, tem q passar pra usar no Base.h
-void outt(unsigned short port, unsigned char data) {
-  __asm__ volatile("outb %0, %1" : : "a"(data), "Nd"(port));
+// temp disk driver
+static inline void insw(unsigned short port, unsigned short *dest, unsigned int count) {
+    asm volatile ("cld; rep insw" :
+                  "=D" (dest), "=c" (count) :
+                  "d" (port), "0" (dest), "1" (count) :
+                  "memory", "cc");
 }
 
-void outw(unsigned short port, unsigned short data) {
-  __asm__ volatile("outw %0, %1" : : "a"(data), "Nd"(port));
-}
+// Estrutura para a comunicação com o drive via PIO
+typedef struct {
+    u16 base;
+    u16 ctrl;
+    u16 bmide;
+    u8 nien :1;
+} ide_channel_registers_t;
 
-unsigned short inw(unsigned short port) {
-  unsigned short result;
-  __asm__ volatile("inw %%edx, %%ax" : "=a" (result) : "d" (port));
-  return result;
-}
+// Função que lê um setor do disco em um buffer
+void _read_from_sector(ide_channel_registers_t* channel, u8 slave, u64 lba, u8 sector_count, u16* buffer) {
+    // Enviar informações de configuração ao canal IDE
+    dbg("starting read\n");
 
-inline void wait_for_disk_controller_w() {
-  while((inw(STATUS_PORT) & 0x80) != 0) {}
-}
-
-inline void wait_for_disk_controller_r() {
-  dbg("wait_for_disk_controller_r()-> Esperando disco...\n");
-  while((inw(STATUS_PORT) & 0x80) != 0) {} // BSY
-  unsigned char status;
-  //do {
-    //status = inw(STATUS_PORT);
-  //} while (!(status & 0x08));
-}
-
-void write_to_sector(short* bytes, unsigned int sector) {
-  wait_for_disk_controller_w();
-  
-
-  outt(DRIVE_HEAD_PORT, (sector >> 24) | 0xE0 ); // byte alto do setor para registrador de disco
-  outt(SECTOR_COUNT_PORT, (unsigned short)1); // 1 setor a ser lido
-  outt(SECTOR_NUMBER_PORT, sector); // byte baixo do setor para registrador de disco
-  outt(CYLINDER_LOW_PORT, (sector >> 8) & 0xFF);
-  outt(CYLINDER_HIGH_PORT, (sector >> 16) & 0xFF );
-
-  outt(STATUS_PORT, STATUS_WRITINGSECTOR);
-  
-  for(int i = 0; i < 256; i+=2) {
-    // ele envia 2 bytes por vez para a porta de dados
-    outw(DATA_PORT, bytes[i]);
-  }
-}
-
-// 2 bytes por vez para serem lidos de um setor
-// buffer precisa ter 512 bytes
-
-// cada vez que 2 bytes de um setor são lidos, o registrador
-// que guarda os bytes do setor é atualizado pros próximos
-// 2 bytes.
-
-#define LBA48_LOW_PORT 0x1F3
-#define LBA48_MID_PORT 0x1F4
-#define LBA48_HIGH_PORT 0x1F5
-#define LBA48_SECTOR_COUNT_PORT 0x1F2
-#define LBA48_DRIVE_HEAD_PORT 0x1F6
-#define LBA48_READING 0x24
-
-void read_from_sector(char* buffer, unsigned long long sector) {
-  wait_for_disk_controller_r();
-  dbg("todo read_from_sector");
-  __asm__ volatile("hlt");
-  char tmp_buf[512];
-  itos((sector>>8)&0xFF, tmp_buf);
-  dbg("CYLINDER_LOW_PORT: ");
-  dbg(tmp_buf);
-  dbg("\n");
-  
-  // TODO FIXME utilizar HAL para facilitar
-
-  /*if(DISK_MODE == 48) {
-    unsigned short count = 1; 
-    outb(COMMAND_PORT, 0xE7);
-    // Bytes mais significativos:
-    outb(LBA48_SECTOR_COUNT_PORT, 0);
-    outb(LBA48_LOW_PORT, (sector >> 24) & 0xFF);
-    outb(LBA48_MID_PORT, (sector >> 32) & 0xFF);
-    outb(LBA48_HIGH_PORT, (sector >> 40) & 0xFF);
-    outb(LBA48_DRIVE_HEAD_PORT, 0x40 | ((sector >> 24) & 0x0F));
+    outb(channel->base  + 6, 0x40 | (slave << 4) | ((lba >> 24) & 0x0F)); // bits 24-27 do LBA
+    outb(channel->base  + 2, sector_count);
+    outb(channel->base  + 3, (u8)  lba);       // LBA bits 0-7
+    outb(channel->base  + 4, (u8) (lba >> 8)); // LBA bits 8-15
+    outb(channel->base  + 5, (u8) (lba >> 16));// LBA bits 16-23
+    outb(channel->base  + 3, (u8) (lba >> 24));// LBA bits 24-31
+    outb(channel->base  + 4, (u8) (lba >> 32));// LBA bits 32-39
+    outb(channel->base  + 5, (u8) (lba >> 40));// LBA bits 40-47
+    outb(channel->base  + 7, 0x24); // Comando READ SECTORS EXT
     
-    // Bytes menos significativos:
-    outb(LBA48_SECTOR_COUNT_PORT, count & 0xFF);
-    outb(LBA48_LOW_PORT, sector & 0xFF);
-    outb(LBA48_MID_PORT, (sector >> 8) & 0xFF);
-    outb(LBA48_HIGH_PORT, (sector >> 16) & 0xFF);
-    outb(LBA48_DRIVE_HEAD_PORT, 0xE0 | ((sector >> 24) & 0x0F));
-
-    outb(COMMAND_PORT, LBA48_READING);
-    
-    dbg("read_from_sector()-> Iniciando leitura de disco\n");
-    for(int i = 0; i<256; i+=2){
-      short data_buf = inw(DATA_PORT);
-      if(data_buf == 0) {
-        dbg("..");
-      } else {
-        dbg("!!");
-      }
-      buffer[i] = (char)(data_buf&0xFF);
-      buffer[i+1] = (char)(data_buf >> 8);
-      unsigned short status = inw(STATUS_PORT);
-      if(status & 0x01) {
-        throw_panic(0, "Disk error");
-      }
+    u8 status = inb(channel->base + 7);
+    if(status & 0x01) {
+      dbg("Disk error status: %d", inb(channel->base + 1));
+      throw_panic(0, "Disk error");
     }
-  } else {
-    // NOT IMPLEMENTED YET
-  }
-  dbg("\n");*/
+
+    dbg("starting read 2\n");
+    // Espera o disco estar pronto
+    while (!(inb(channel->base + 7) & 0x08));
+    dbg("disco pronto\n");
+    
+    // Ler dados
+    insw(channel->base, buffer, sector_count * 256);
 }
+
+void read_from_sector(const char* buffer, u64 sector) {
+    ide_channel_registers_t channel;
+    dbg("called read_from_sector()\n");
+    channel.base = 0x1F0;  // Endereço base usual para o primeiro canal IDE
+    channel.ctrl = 0x3F6;  // Endereço usual do controle ido primeiro canal IDE
+
+    // Lê o primeiro setor em LBA48
+    _read_from_sector(&channel, 0, sector, 1, (u16*)buffer);
+
+    // O buffer agora contém os dados do primeiro setor
+    // Siga com a lógica necessária
+
+}
+
