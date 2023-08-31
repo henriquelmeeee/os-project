@@ -8,8 +8,11 @@ rm ../Build/disk.img
 rm tmp.prekernel.asm
 rm tmp.bootloader.asm
 
-cp bootloader.asm tmp.bootloader.asm
-cp prekernel.asm tmp.prekernel.asm
+cp Prekernel/BIOS/bootloader.asm tmp.bootloader.asm
+cp Prekernel/BIOS/prekernel.asm tmp.prekernel.asm
+
+cp Prekernel/BIOS/bootloader.asm bootloader.asm
+cp Prekernel/BIOS/prekernel.asm prekernel.asm
 
 KERNEL_LOCATION="10485760"
 
@@ -112,6 +115,9 @@ truncate ../Build/disk.img --size=100M
 
 echo "Building user-land stuff"
 python3 build_userland.py
+
+rm prekernel.asm
+rm bootloader.asm
 
 sleep 1
 sh run.sh

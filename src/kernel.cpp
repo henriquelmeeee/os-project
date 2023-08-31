@@ -8,7 +8,6 @@
 // FIXME se eu ler um setor aleatorio agora tipo o setor 2, na hora de ler o setor 200
 // ele vai pegar um valor meio q aleatorio parece ser algo relacionado ao cache sla
 
-extern "C" void kmain();
 #define KERNEL_SIZE 26112
 // Drivers:
 //#include "Drivers/Keyboard.h"
@@ -37,7 +36,17 @@ extern "C" void kmain();
 
 unsigned long long mem_usage = 0;
 
-extern "C" void kentrypoint() {kmain();}
+enum BootType {
+  BIOS = 0,
+  UEFI = 1,
+};
+
+struct BootloaderInfo {
+  BootType boot_type;
+} __attribute__((packed));
+
+extern "C" void kmain(BootloaderInfo* info);
+extern "C" __attribute__((sysv_abi)) void kentrypoint(BootloaderInfo* info) {kmain(info);}
 
 volatile void sleep(unsigned long long ticks) {
   for(unsigned long long i = 0; i<ticks; i++) {for (volatile int j = 0; j<1000000; j++){}}
@@ -78,11 +87,24 @@ Memory::PhysicalRegion physical_data;
 
 HAL::System system = HAL::System();
 
-extern "C" void kmain() {
+extern "C" void kmain(BootloaderInfo* info) {
   CLI;
   
   Text::text_clear();
-  Text::Writeln("Loading kernel", 3);
+  Text::Writeln("Loading kernel", 9);
+  // TODO check if BootloaderInfo is corrupted
+  
+  if(info == 0) {
+    throw_panic(0, "BootloaderInfo structure pointer is null");
+  }
+
+  dbg("BootloaderInfo ptr: %d\n", (unsigned long)info);
+
+  if(info->boot_type == BIOS) {
+    Text::Writeln("BIOS boot detected", 9);
+  } else {
+    Text::Writeln("UEFI boot detected", 9);
+  }
 
   system = HAL::System();
   
@@ -192,7 +214,7 @@ extern "C" void kmain() {
       :"rax","memory"
       );
 
-  Text::Writeln("Pagination for kernel enabled, initializing devices...", 3);
+  Text::Writeln("Pagination for kernel enabled, initializing devices...", 9);
 
   dbg("kmain()-> Tabela de paginação recriada com sucesso\n");
   dbg("kmain()-> Criando regiões para stack, heap e data\n");
