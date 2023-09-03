@@ -153,6 +153,7 @@ Real64Coding:
   mov rbp, rsp
   cli
   loop_main:
+    lea rax, [rel boot_info_struct]
     jmp 10485760
     cli
     hlt
@@ -173,5 +174,8 @@ page_table_l3:
   resb 4096
 page_table_l2:
   resb 4096
+
+boot_info_struct:
+  dd 0 ;  BIOS
 
 times 512*50-($-$$) db 0

@@ -7,6 +7,8 @@
 #include "../Memory/Base_Mem.h"
 #include "../panic.h"
 #include "Process.h"
+#include "KernelTasks/KTasks.h"
+#if 0
 namespace Process{
 
   #define vPage i16
@@ -155,6 +157,149 @@ bool CreateProcess(const char* name, u16 privilege, const char* fs_binary_locati
 
   //kfree(bin);
 
+  return true;
+}
+
+#endif
+
+// temporariamente iremos ter apenas tarefas do kernel
+
+
+
+class KernelProcess {
+  public:
+    void* callback;
+    u128 last_cycles_counter;
+    Registers regs; 
+
+    KernelProcess(void* callback) {
+      this->callback = callback;
+    }
+};
+
+KernelProcess* actual_ktask;
+Memory::Vector<KernelProcess> kTasks;
+
+
+#define SAVE_ALL_REGISTERS() asm volatile (  \
+    "pushq %rax;"                          \
+    "pushq %rbx;"                          \
+    "pushq %rcx;"                          \
+    "pushq %rdx;"                          \
+    "pushq %rsi;"                          \
+    "pushq %rdi;"                          \
+    "pushq %rbp;"                          \
+    "pushq %r8;"                           \
+    "pushq %r9;"                           \
+    "pushq %r10;"                          \
+    "pushq %r11;"                          \
+    "pushq %r12;"                          \
+    "pushq %r13;"                          \
+    "pushq %r14;"                          \
+    "pushq %r15;"                          \
+    )
+
+
+#define RESTORE_ALL_REGISTERS() asm volatile ( \
+    "popq %r15;"                            \
+    "popq %r14;"                            \
+    "popq %r13;"                            \
+    "popq %r12;"                            \
+    "popq %r11;"                            \
+    "popq %r10;"                            \
+    "popq %r9;"                             \
+    "popq %r8;"                             \
+    "popq %rbp;"                            \
+    "popq %rdi;"                            \
+    "popq %rsi;"                            \
+    "popq %rdx;"                            \
+    "popq %rcx;"                            \
+    "popq %rbx;"                            \
+    "popq %rax;"                            \
+    :                                       \
+    :                                       \
+    : "r15", "r14", "r13", "r12", "r11", "r10", "r9", "r8", "rbp", "rdi", "rsi", "rdx", "rcx", "rbx", "rax" \
+)
+
+#define LOAD_GP_REGISTERS_FROM_TASK() asm volatile ( \
+    "movq %0, %%rax;"                        \
+    "movq %1, %%rbx;"                        \
+    "movq %2, %%rcx;"                        \
+    "movq %3, %%rdx;"                        \
+    "movq %4, %%rsi;"                        \
+    "movq %5, %%rdi;"                        \
+    "movq %6, %%rbp;"                        \
+    "movq %7, %%r8;"                         \
+    "movq %8, %%r9;"                         \
+    "movq %9, %%r10;"                        \
+    "movq %10, %%r11;"                       \
+    "movq %11, %%r12;"                       \
+    "movq %12, %%r13;"                       \
+    "movq %13, %%r14;"                       \
+    "movq %14, %%r15;"                       \
+    :                                       \
+    : "m"(actual_ktask->regs.rax), "m"(actual_ktask->regs.rbx), "m"(actual_ktask->regs.rcx), "m"(actual_ktask->regs.rdx), \
+      "m"(actual_ktask->regs.rsi), "m"(actual_ktask->regs.rdi), "m"(actual_ktask->regs.rbp), "m"(actual_ktask->regs.r8),  \
+      "m"(actual_ktask->regs.r9), "m"(actual_ktask->regs.r10), "m"(actual_ktask->regs.r11), "m"(actual_ktask->regs.r12), \
+      "m"(actual_ktask->regs.r13), "m"(actual_ktask->regs.r14), "m"(actual_ktask->regs.r15)                            \
+    : "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "memory"  \
+)
+
+#define STORE_GP_REGISTERS_IN_TASK() asm volatile ( \
+    "movq %%rax, %0;" \
+    "movq %%rbx, %1;" \
+    "movq %%rcx, %2;" \
+    "movq %%rdx, %3;" \
+    "movq %%rsi, %4;" \
+    "movq %%rdi, %5;" \
+    "movq %%rbp, %6;" \
+    "movq %%r8,  %7;" \
+    "movq %%r9,  %8;" \
+    "movq %%r10, %9;" \
+    "movq %%r11, %10;" \
+    "movq %%r12, %11;" \
+    "movq %%r13, %12;" \
+    "movq %%r14, %13;" \
+    "movq %%r15, %14;" \
+    : "=m"(actual_ktask->regs.rax), "=m"(actual_ktask->regs.rbx), "=m"(actual_ktask->regs.rcx), "=m"(actual_ktask->regs.rdx), \
+      "=m"(actual_ktask->regs.rsi), "=m"(actual_ktask->regs.rdi), "=m"(actual_ktask->regs.rbp), "=m"(actual_ktask->regs.r8), \
+      "=m"(actual_ktask->regs.r9), "=m"(actual_ktask->regs.r10), "=m"(actual_ktask->regs.r11), "=m"(actual_ktask->regs.r12), \
+      "=m"(actual_ktask->regs.r13), "=m"(actual_ktask->regs.r14), "=m"(actual_ktask->regs.r15) \
+    : \
+    : "memory" \
+)
+
+void __attribute__((interrupt)) Scheduler(TimerStack *stack) {
+  SAVE_ALL_REGISTERS();
+  actual_ktask->regs.rip = stack->rip;
+  actual_ktask->regs.cs = stack->cs;
+  actual_ktask->regs.rflags = stack->rflags;
+  actual_ktask->regs.rsp = stack->rsp;
+  actual_ktask->regs.ss = stack->ss;
+  STORE_GP_REGISTERS_IN_TASK();
+
+  for(int i = 0; i < 1; i++) {
+
+    unsigned short divisor = 1193180 / 50; // 20ms
+    outb(0x43, 0x36);
+    unsigned char l = (unsigned char)(divisor & 0xFF);
+    unsigned char h = (unsigned char)((divisor >> 8)&0xFF);
+    outb(0x40, l);
+    outb(0x40, h);
+    actual_ktask = &kTasks[0];
+
+    LOAD_GP_REGISTERS_FROM_TASK();
+    stack->rip = actual_ktask->regs.rip;
+
+  }
+}
+
+
+bool CreateKernelProcess(void* callback) {
+  if(callback == nullptr) {
+    throw_panic(0, "Fatal: Kernel Task address is null");
+  }
+  kTasks.append(KernelProcess(callback));
   return true;
 }
 

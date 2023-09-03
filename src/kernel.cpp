@@ -25,6 +25,7 @@
 #include "Memory/Heap/Heap.h"
 
 #include "Tasks/Process.h"
+#include "Tasks/KernelTasks/KTasks.h"
 #include "panic.h"
 
 // Interrupções:
@@ -230,7 +231,7 @@ extern "C" void kmain(BootloaderInfo* info) {
   
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
-  
+#if 0
   FS filesystem;
   Text::NewLine();
 
@@ -244,7 +245,13 @@ extern "C" void kmain(BootloaderInfo* info) {
   Text::NewLine();
   Text::Writeln("Kernel: Shell will be spawned", 2);
   while(true);
- 
+#endif
+
+  Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
+
+  CreateKernelProcess((void*)KernelTask::Watchdog);
+
+
   
 
 }

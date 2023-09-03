@@ -43,7 +43,7 @@ g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mno-sse -mno-mmx -mn
 
 
 echo "Compilando Tasks/*"
-g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Tasks/Process.cpp -o bin/tmp/process.o
+g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -O0 -mgeneral-regs-only -c Tasks/Process.cpp -o bin/tmp/process.o
 
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Utils/Base.cpp -o bin/tmp/base.o
 

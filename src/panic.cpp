@@ -39,7 +39,7 @@ outw(0x3D4, 0xE317); // Text-Mode Blinking
   write(msg);
   newline;
   newline;
-  itos(Process::amount_of_procs, buffer);
+  //itos(Process::amount_of_procs, buffer);
   write(buffer);
   write(" tasks");
   newline;
@@ -47,11 +47,11 @@ outw(0x3D4, 0xE317); // Text-Mode Blinking
   write(buffer); write(" kernel chunks"); newline;
   itoh(rip, buffer); write(("0x"), 0x4); write(buffer, 0x4); write((" - RIP"), 0x4); newline;
   dbg("Tasks dump:\n");
-  for(unsigned int i = 0; i<Process::amount_of_procs; i++) {
+  //for(unsigned int i = 0; i<Process::amount_of_procs; i++) {
     //dbg(Process::procs[i].name);
     dbg("\n");
     //write(Process::procs[i].name);
-  }
+  //}
   /*
   for(int i = 0; i<1023; i++) {
     if(Process::procs[i] == 0)
