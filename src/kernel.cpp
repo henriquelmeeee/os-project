@@ -250,7 +250,8 @@ extern "C" void kmain(BootloaderInfo* info) {
   Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
 
   CreateKernelProcess((void*)KernelTask::Watchdog);
-
+  
+  while(true);
 
   
 

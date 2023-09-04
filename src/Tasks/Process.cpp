@@ -209,7 +209,6 @@ Memory::Vector<KernelProcess> kTasks;
     "popq %r10;"                            \
     "popq %r9;"                             \
     "popq %r8;"                             \
-    "popq %rbp;"                            \
     "popq %rdi;"                            \
     "popq %rsi;"                            \
     "popq %rdx;"                            \
@@ -218,7 +217,7 @@ Memory::Vector<KernelProcess> kTasks;
     "popq %rax;"                            \
     :                                       \
     :                                       \
-    : "r15", "r14", "r13", "r12", "r11", "r10", "r9", "r8", "rbp", "rdi", "rsi", "rdx", "rcx", "rbx", "rax" \
+    : "r15", "r14", "r13", "r12", "r11", "r10", "r9", "r8", "rdi", "rsi", "rdx", "rcx", "rbx", "rax" \
 )
 
 #define LOAD_GP_REGISTERS_FROM_TASK() asm volatile ( \
@@ -228,7 +227,6 @@ Memory::Vector<KernelProcess> kTasks;
     "movq %3, %%rdx;"                        \
     "movq %4, %%rsi;"                        \
     "movq %5, %%rdi;"                        \
-    "movq %6, %%rbp;"                        \
     "movq %7, %%r8;"                         \
     "movq %8, %%r9;"                         \
     "movq %9, %%r10;"                        \
@@ -242,7 +240,7 @@ Memory::Vector<KernelProcess> kTasks;
       "m"(actual_ktask->regs.rsi), "m"(actual_ktask->regs.rdi), "m"(actual_ktask->regs.rbp), "m"(actual_ktask->regs.r8),  \
       "m"(actual_ktask->regs.r9), "m"(actual_ktask->regs.r10), "m"(actual_ktask->regs.r11), "m"(actual_ktask->regs.r12), \
       "m"(actual_ktask->regs.r13), "m"(actual_ktask->regs.r14), "m"(actual_ktask->regs.r15)                            \
-    : "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "memory"  \
+    : "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "memory"  \
 )
 
 #define STORE_GP_REGISTERS_IN_TASK() asm volatile ( \
@@ -252,31 +250,33 @@ Memory::Vector<KernelProcess> kTasks;
     "movq %%rdx, %3;" \
     "movq %%rsi, %4;" \
     "movq %%rdi, %5;" \
-    "movq %%rbp, %6;" \
-    "movq %%r8,  %7;" \
-    "movq %%r9,  %8;" \
-    "movq %%r10, %9;" \
-    "movq %%r11, %10;" \
-    "movq %%r12, %11;" \
-    "movq %%r13, %12;" \
-    "movq %%r14, %13;" \
-    "movq %%r15, %14;" \
+    "movq %%r8,  %6;" \
+    "movq %%r9,  %7;" \
+    "movq %%r10, %8;" \
+    "movq %%r11, %9;" \
+    "movq %%r12, %10;" \
+    "movq %%r13, %11;" \
+    "movq %%r14, %12;" \
+    "movq %%r15, %13;" \
     : "=m"(actual_ktask->regs.rax), "=m"(actual_ktask->regs.rbx), "=m"(actual_ktask->regs.rcx), "=m"(actual_ktask->regs.rdx), \
-      "=m"(actual_ktask->regs.rsi), "=m"(actual_ktask->regs.rdi), "=m"(actual_ktask->regs.rbp), "=m"(actual_ktask->regs.r8), \
+      "=m"(actual_ktask->regs.rsi), "=m"(actual_ktask->regs.rdi), "=m"(actual_ktask->regs.r8), \
       "=m"(actual_ktask->regs.r9), "=m"(actual_ktask->regs.r10), "=m"(actual_ktask->regs.r11), "=m"(actual_ktask->regs.r12), \
       "=m"(actual_ktask->regs.r13), "=m"(actual_ktask->regs.r14), "=m"(actual_ktask->regs.r15) \
     : \
     : "memory" \
 )
 
-void __attribute__((interrupt)) Scheduler(TimerStack *stack) {
+
+
+
+void Scheduler(TimerStack stack) {
   SAVE_ALL_REGISTERS();
-  actual_ktask->regs.rip = stack->rip;
-  actual_ktask->regs.cs = stack->cs;
-  actual_ktask->regs.rflags = stack->rflags;
-  actual_ktask->regs.rsp = stack->rsp;
-  actual_ktask->regs.ss = stack->ss;
-  STORE_GP_REGISTERS_IN_TASK();
+  actual_ktask->regs.rip = stack.rip;
+  actual_ktask->regs.cs = stack.cs;
+  actual_ktask->regs.rflags = stack.rflags;
+  actual_ktask->regs.rsp = stack.rsp;
+  actual_ktask->regs.ss = stack.ss;
+  //STORE_GP_REGISTERS_IN_TASK();
 
   for(int i = 0; i < 1; i++) {
 
@@ -288,8 +288,8 @@ void __attribute__((interrupt)) Scheduler(TimerStack *stack) {
     outb(0x40, h);
     actual_ktask = &kTasks[0];
 
-    LOAD_GP_REGISTERS_FROM_TASK();
-    stack->rip = actual_ktask->regs.rip;
+    //LOAD_GP_REGISTERS_FROM_TASK();
+    stack.rip = actual_ktask->regs.rip;
 
   }
 }
