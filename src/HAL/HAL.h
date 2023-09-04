@@ -208,6 +208,7 @@ namespace HAL {
             :
             : "m" (IDTR) // "lidt &IDTR"
             );
+
         Text::Writeln("HAL: IDT initialized", 0xe);
 
 #define PIC1_COMMAND 0x20
@@ -232,9 +233,9 @@ namespace HAL {
         outb(PIC1_DATA, PIC_ICW4);
         outb(PIC2_DATA, PIC_ICW4);
 
-        // Desmascarando interrupção do teclado
+        // Desmascarando interrupção do teclado e timer apenas
       
-        outb(PIC1_DATA, 0xFE);
+        outb(PIC1_DATA, 0xFD);
         outb(PIC2_DATA, 0xFF);
 
         return true;

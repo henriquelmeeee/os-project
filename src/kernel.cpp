@@ -250,7 +250,28 @@ extern "C" void kmain(BootloaderInfo* info) {
   Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
 
   CreateKernelProcess((void*)KernelTask::Watchdog);
+  system.append_idt((unsigned long)KernelTask::Watchdog, 32);
+
+  outb(0x20, 0x11);
+outb(0xA0, 0x11);
+outb(0x21, 0x20);
+outb(0xA1, 0x28);
+outb(0x21, 0x04);
+outb(0xA1, 0x02);
+outb(0x21, 0x01);
+outb(0xA1, 0x01);
+outb(0x21, 0x0);
+outb(0xA1, 0x0);
+
+  u32 divisor = 1193180 / 50;
+  outb(0x43, 0x36);
+  u8 low = (u8)divisor&0xFF;
+  u8 high = (u8)((divisor>>8)&0xFF);
+
+  outb(0x40, low);
+  outb(0x40, high);
   
+  STI;
   while(true);
 
   
