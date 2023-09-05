@@ -1,9 +1,12 @@
 #pragma once
 
-#ifndef STDIO
-#define STDIO
+#ifndef _STDIO
+#define _STDIO
 
 #include "../Utils/Base.h"
+
+#define outb(port, val) \
+  __asm__ volatile("outb %0, %1" : : "a"(static_cast<unsigned char>(val)), "dN"(static_cast<unsigned short>(port)))
 
 inline char* itoa(int value, char* buffer, int base) {
     char* ptr = buffer;

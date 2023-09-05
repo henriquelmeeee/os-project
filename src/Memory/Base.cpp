@@ -2,7 +2,7 @@
 #include "Heap/Heap.h"
 #include "Base_Mem.h"
 #include "../Tasks/Process.h"
-
+#if 0
 // DIRETIVAS TEMPORÁRIAS
 #define TOTAL_RAM_IN_PAGE_SCALE 2048
 
@@ -32,4 +32,4 @@ Memory::PhysicalRegion kmmap(u64 initial_size) {
   }
   return temp;
 }
-
+#endif

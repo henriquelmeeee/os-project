@@ -88,7 +88,7 @@ alignas(4096) Memory::PTEntry kPT[512][512];
 
 HAL::System system = HAL::System();
 
-extern "C" void kmain(BootloaderInfo* info) {
+extern "C" void kmain(BootloaderInfo* info) { // point kernel
   CLI;
   
   Text::text_clear();
@@ -108,13 +108,17 @@ extern "C" void kmain(BootloaderInfo* info) {
   }
 
   system = HAL::System();
-  
   mem_usage+=KERNEL_SIZE;
 
   if(!(system.init_serial_for_dbg()))
       Text::Writeln("Warning: cannot initialize serial for debugging", 0x4);
 
+  initialize();
+
   pages_in_use = (unsigned long*)kmalloc(PAGE_SIZE);
+  if(pages_in_use == nullptr) {
+    throw_panic(0, "kmalloc() returned nullptr");
+  }
 
   dbg("kmain()-> Kernel iniciando\n");
   char* txtaddr = (char*) 0xB8000;
@@ -248,7 +252,7 @@ extern "C" void kmain(BootloaderInfo* info) {
 #endif
 
   Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
-
+  halt();
   CreateKernelProcess((void*)KernelTask::Watchdog);
   system.append_idt((unsigned long)KernelTask::Watchdog, 32);
 
@@ -270,8 +274,9 @@ outb(0xA1, 0x0);
 
   outb(0x40, low);
   outb(0x40, high);
-  
-  STI;
+ 
+  system.DoAutomatedTests();
+
   while(true);
 
   

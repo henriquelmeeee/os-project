@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef BASE_H
 #define BASE_H
 #define CLI __asm__("cli")
@@ -104,7 +106,6 @@ extern unsigned long long TOTAL_RAM;
 extern unsigned long TOTAL_RAM_IN_PAGE_SCALE;
 
 
-
 struct P {
   u64 Present;
   u64 Writable;
@@ -166,7 +167,10 @@ extern "C" void *memcpy(void* dest, const void* src, int size);
 
 #include "../kstd/stdio.h"
 
-#define dbgl dbg("\n")
+//#define dbgl dbg("\n")
+
+
+
 enum ErrorType {
   CRITICAL,
   IRRELEVANT,
@@ -218,4 +222,5 @@ namespace Utils {
 bool itos(long value, char* to_ret);
 bool itoh(long value, char* to_ret);
 
+#include "../kstd/stdio.h"
 #endif

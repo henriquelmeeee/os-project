@@ -240,6 +240,14 @@ namespace HAL {
 
         return true;
       }
+      void DoAutomatedTests() {
+        auto* any_chunk = kmalloc(32);
+        if(any_chunk == 0) {
+          throw_panic(0, "Test not passed: kmalloc() returned nullptr");
+        }
+        //kfree(any_chunk);
+      }
+
 
   };
 };
