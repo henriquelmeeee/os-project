@@ -82,9 +82,9 @@ alignas(4096) Memory::PDPTEntry kPDPT[512];
 alignas(4096) Memory::PDEntry kPD[512];
 alignas(4096) Memory::PTEntry kPT[512][512];
 
-Memory::PhysicalRegion physical_stack;
-Memory::PhysicalRegion physical_heap;
-Memory::PhysicalRegion physical_data;
+//Memory::PhysicalRegion physical_stack;
+//Memory::PhysicalRegion physical_heap;
+//Memory::PhysicalRegion physical_data;
 
 HAL::System system = HAL::System();
 
@@ -220,9 +220,9 @@ extern "C" void kmain(BootloaderInfo* info) {
   dbg("kmain()-> Tabela de paginação recriada com sucesso\n");
   dbg("kmain()-> Criando regiões para stack, heap e data\n");
 
-  physical_stack        = kmmap();
-  physical_heap         = kmmap();
-  physical_data         = kmmap();
+  //physical_stack        = kmmap();
+  //physical_heap         = kmmap();
+  //physical_data         = kmmap();
 
 
   

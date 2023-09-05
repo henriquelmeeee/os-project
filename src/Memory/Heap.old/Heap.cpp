@@ -7,8 +7,6 @@
 
 u64 number_of_chunks = 0;
 
-
-
 void inline append_chunk(struct Chunk* addr) {
   //CHUNKS[number_of_chunks] = addr;
 }

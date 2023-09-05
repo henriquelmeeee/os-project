@@ -137,7 +137,7 @@ class Vector {
           for(int i = 0; i<this->capacity; i++) {
             //Utils::kmemcpy(new_chunk[i], this->chunk[i], sizeof(V));
           }
-          kfree(this->chunk);
+          //kfree(this->chunk);
           this->chunk = new_chunk;
           this->capacity += 32;
         } while(index>=this->capacity);
@@ -169,6 +169,7 @@ struct PhysicalPage {
   u64 page_number;
 };
 
+/*
 class PhysicalRegion {
   public:
     Vector<PhysicalPage> pages;
@@ -188,11 +189,10 @@ class PhysicalRegion {
       start_address = 512*4096;
       ++this->index_of_pages;
     }
-};
+};*/
 
 extern Vector<PhysicalPage> ppages_in_use;
 
 }
 
-Memory::PhysicalRegion kmmap(u64 initial_size=0);
 #endif
