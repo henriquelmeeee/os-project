@@ -1,0 +1,50 @@
+[org 0xFF00]
+[bits 32]
+
+prepareSwitchMode:
+  cli
+  push ds
+  push ss
+  push ebp
+  push cs
+
+  xor ds, ds
+  mov ss, ds
+  mov [oldStackPointer], esp
+  mov esp, 0x7C00
+  mov eax, cr0
+  and ax, 0xFFFE
+  mov cr0, eax
+  [bits 16]
+  ljmp 0, $next
+  next:
+    call print_char
+  lgdt [gdtr]
+  lidt [idtr]
+  mov eax, cr0
+  or al, 1
+  mov cr0, eax
+  [bits 32]
+  mov esp, [oldStackPointer]
+  pop cs
+  jmp cs:return_to_kernel
+  sti
+  ret
+
+return_to_kernel:
+  pop ebp
+  pop ss
+  pop ds
+  ret
+
+print_char:
+  ; TODO pegar caractere no registrador como argumento e imprimir
+  ret
+
+gdtr:
+  dw GDT_END - GDT_START - 1
+  dd GDT_START
+idtr:
+  dw IDT_END - IDT_START - 1
+  dd IDT_START
+

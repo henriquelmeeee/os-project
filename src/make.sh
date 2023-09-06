@@ -1,3 +1,5 @@
+cd Kernel
+
 echo "Criando backup..."
 mkdir /tmp/backup 2> /dev/null
 mkdir /tmp/backup/src 2>/dev/null
