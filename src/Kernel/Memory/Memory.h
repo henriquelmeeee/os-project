@@ -29,6 +29,9 @@ struct PagePermissions {
 };
 
 class VMObject {
+  // Se m_physical_page == 0, então o VMObject ainda não foi alocado
+  // não é recomendável criar um VMObject sem um m_physical_page, porque ele ainda estará no vetor 
+  // de páginas físicas que as syscalls usarão para procurar por páginas físicas disponíveis
   private:
     u64 m_virtual_page;
     u64 m_physical_page;
