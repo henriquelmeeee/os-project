@@ -26,7 +26,7 @@ g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c kernel.cpp -o bin/
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c panic.cpp -o bin/tmp/panic.o
 echo "Compilando Memory/*"
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Memory/Heap/Heap.cpp -o bin/tmp/heap.o
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Memory/Base.cpp -o bin/tmp/mbase.o
+g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Memory/Memory.cpp -o bin/tmp/memory.o
 
 
 #g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Filesystem/Filesystem.cpp -o bin/tmp/fs.o
@@ -50,7 +50,7 @@ g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mge
 
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Utils/Base.cpp -o bin/tmp/base.o
 
-ld -nostdlib -static -T KernelLinker.ld bin/tmp/kernel.o bin/tmp/heap.o bin/tmp/watchdog.o bin/tmp/fpuerr.o bin/tmp/syscalls.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o bin/tmp/mbase.o -o bin/kernel.bin
+ld -nostdlib -static -T KernelLinker.ld bin/tmp/kernel.o bin/tmp/heap.o bin/tmp/memory.o bin/tmp/watchdog.o bin/tmp/fpuerr.o bin/tmp/syscalls.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o -o bin/kernel.bin
 
 echo "Compilando shell"
 
