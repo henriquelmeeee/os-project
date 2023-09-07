@@ -5,7 +5,7 @@
 #include "../Drivers/VIDEO/preload.h"
 #include "../Utils/Base.h"
 #include "../Memory/Base_Mem.h"
-#include "../panic.h"
+#include "../Core/panic.h"
 #include "Process.h"
 #include "KernelTasks/KTasks.h"
 #if 0

@@ -1,7 +1,7 @@
 #include "../../Utils/Base.h"
 #include "../Base_Mem.h"
 
-#include "../../panic.h"
+#include "../../Core/panic.h"
 
 #include "Heap.h"
 

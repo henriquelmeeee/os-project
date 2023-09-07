@@ -40,6 +40,15 @@
       "iretq;" \
       )
 
+enum BootType {
+  BIOS = 0,
+  UEFI = 1,
+};
+
+struct BootloaderInfo {
+  BootType boot_type;
+} __attribute__((packed));
+
 #include "../Core/panic.h"
 #include "../Memory/Base_Mem.h"
 

@@ -9,7 +9,7 @@
 #include "../../kstd/stdio.h"
 #include "../Base_Mem.h"
 
-#include "../../panic.h"
+#include "../../Core/panic.h"
 
 struct PhysicalRegion {
   u32 start_address;

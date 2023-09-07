@@ -1,5 +1,5 @@
 #include "../Utils/Base.h"
-#include "../panic.h"
+#include "../Core/panic.h"
 
 // ATA (Advanced Technology Attachment) protocol for PATA/SATA disks
 

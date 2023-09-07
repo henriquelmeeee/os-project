@@ -26,7 +26,7 @@
 
 #include "Tasks/Process.h"
 #include "Tasks/KernelTasks/KTasks.h"
-#include "panic.h"
+#include "Core/panic.h"
 
 // Interrupções:
 #include "Interruptions/preload.h"
@@ -36,15 +36,6 @@
 #include "HAL/HAL.h"
 
 unsigned long long mem_usage = 0;
-
-enum BootType {
-  BIOS = 0,
-  UEFI = 1,
-};
-
-struct BootloaderInfo {
-  BootType boot_type;
-} __attribute__((packed));
 
 extern "C" void kmain(BootloaderInfo* info);
 extern "C" __attribute__((sysv_abi)) void kentrypoint(BootloaderInfo* info) {kmain(info);}
@@ -93,6 +84,7 @@ extern "C" void kmain(BootloaderInfo* info) { // point kernel
   
   Text::text_clear();
   Text::Writeln("Loading kernel", 9);
+  throw_panic(0, "teste");
   // TODO check if BootloaderInfo is corrupted
   
   if(info == 0) {

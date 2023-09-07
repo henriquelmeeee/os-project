@@ -1,5 +1,5 @@
 #include "../../Utils/Base.h"
-#include "../../panic.h"
+#include "../../Core/panic.h"
 #include "../../HAL/HAL.h"
 
 #define HEAP_BASE_ADDRESS (unsigned long) (500*1024*1024) // 500MB

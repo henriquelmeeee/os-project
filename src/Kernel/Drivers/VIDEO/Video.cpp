@@ -21,7 +21,7 @@ unsigned char cursor[6 * SCALE_FACTOR][2] = {
 };
 
 
-#include "../../DefaultConfig.h"
+#include "../../Core/DefaultConfig.h"
 
 unsigned int cursor_location[] = {30,30};
 

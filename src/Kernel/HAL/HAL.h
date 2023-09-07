@@ -9,6 +9,8 @@
 
 #include "../Interruptions/preload.h"
 
+#include "../Core/Debugging/Symbols.h"
+
 #define PORT (unsigned short)0x3f8 /* COM1 register, for control */
 
 struct IDT_ptr {
@@ -153,12 +155,19 @@ namespace HAL {
 
         Text::NewLine();
         while( *rbp > 1 MB) {
-          char buffer[32];
-          itoh(*(rbp+1), buffer);
-          if(rbp == nullptr)
-            break;
-          Text::Write("Call @0x");
-          Text::Writeln(buffer);
+          Symbols::Symbol* sym = Symbols::sym_lookup((void*) (*(rbp+1)));
+          if(sym != nullptr) {
+            Text::Write("Call @ ");
+            Text::Writeln(sym->name);
+          } else {
+            char buffer[32];
+          
+            itoh(*(rbp+1), buffer);
+            if(rbp == nullptr)
+              break;
+            Text::Write("Call @0x");
+            Text::Writeln(buffer);
+          }
           rbp = (u64*)*rbp;
         }
 

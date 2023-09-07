@@ -1,8 +1,8 @@
-#include "Tasks/Process.h" // namespace Process
-#include "Utils/Base.h" // namespace Utils
+#include "../Tasks/Process.h" // namespace Process
+#include "../Utils/Base.h" // namespace Utils
 #include "DefaultConfig.h"
-#include "Drivers/VIDEO/Video.h"
-#include "HAL/HAL.h"
+#include "../Drivers/VIDEO/Video.h"
+#include "../HAL/HAL.h"
 
 #define hlt __asm__ volatile("hlt")
 #define newline Text::NewLine();
