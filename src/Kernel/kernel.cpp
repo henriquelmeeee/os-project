@@ -17,7 +17,7 @@
 
 #include "Filesystem/Filesystem.h"
 
-#include "DefaultConfig.h"
+#include "Core/DefaultConfig.h"
 #include "Utils/Base.h"
 #include "Utils/Errors.h"
 

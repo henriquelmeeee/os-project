@@ -40,7 +40,7 @@
       "iretq;" \
       )
 
-#include "../panic.h"
+#include "../Core/panic.h"
 #include "../Memory/Base_Mem.h"
 
 // ERRORS
