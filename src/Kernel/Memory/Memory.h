@@ -5,6 +5,7 @@
 
 #include "Base_Mem.h"
 #include "../Utils/Base.h"
+class Region;
 #include "../Tasks/Process.h"
 
 #define KERNEL_END 1000000
@@ -51,6 +52,7 @@ class VMObject {
       u64* pd_entry;
       u64* pt_entry;
 
+      // Agora precisamos achar ou alocar ponteiros para PD e PT
 
       if(!((*pdpt_entry) & PG_PRESENT)) {
         dbg("Page Directory %d indisponível, criando um novo\n", pd_index);
@@ -63,16 +65,23 @@ class VMObject {
         *pd_entry = *pt_entry & ~0xFFF; // obtém o endereço do PT sem considerar as flags
         *pt_entry = (v_page * PAGE_SIZE) & ~0xFFF; // obtém o endereço da página virtual sem considerar as flags
 
-        // TODO flags para pd_entry e pt_entry q alocamos agora, se pa pro pml4 e pdpt tbm
-        m_pt_location = pt_entry;
+        *pd_entry = *pd_entry | PG_PRESENT;
+        *pt_entry = *pt_entry | PG_PRESENT;
       } else {
-        // TODO get PD pointer and PT pointer
+        pd_entry = (u64*) ( (*pdpt_entry) & ~0xFFF);
+        if(! ((*pd_entry) | PG_PRESENT) )
+          pt_entry = (u64*) kmalloc(512 * sizeof(u64));
+        else
+          pt_entry = (u64*) ( (*pd_entry) & ~0xFFF);
+
         if((*pt_entry) & PG_PRESENT)
           return false;
+
         *pt_entry = *pt_entry | PG_PRESENT;
-        // TODO permissões
-        m_pt_location = pt_entry;
       }
+    m_pt_location = pt_entry;
+
+    // TODO flags para PDPT, PD, PT
     return true;
     }
 
