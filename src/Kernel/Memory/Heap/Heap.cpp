@@ -64,6 +64,7 @@ void dump_kernel_heap() {
   Chunk* actual_chunk = (Chunk*) ( (actual_arena)+(arenas->m_header.offset_first_chunk) );
   dbg("Kernel Heap Dump\n");
   dbg("Size\t\tAddress\t\tArena\n");
+#if 0
   while(true) {
     if(!(actual_chunk->exists)) {
       actual_arena = actual_arena->m_header.next;
@@ -78,4 +79,5 @@ void dump_kernel_heap() {
 
 
   }
+#endif
 }

@@ -7,14 +7,6 @@
 #include "../Utils/Base.h"
 #include "../Tasks/Process.h"
 
-class Process {
-  public:
-    u64* pml4;
-    u64* pdpt;
-    u64* pd;
-    u64* pt;
-}; // TODO remover esse CLASS PROCESS pq ele será feito em Tasks/Process.h de maneira adequada
-
 #define KERNEL_END 1000000
 
 #define PG_PRESENT 0x1
@@ -38,7 +30,6 @@ class VMObject {
     u64* m_pt_location = nullptr;
     PagePermissions m_permissions;
 
-    Process* m_process;
   public:
     VMObject(u64 virtual_page, u64 physical_page = 0) : m_virtual_page(virtual_page) {
       dbg("Kernel: Novo VMOBject criado\nA página virtual é %d\n", (int)virtual_page);
@@ -46,7 +37,7 @@ class VMObject {
       this->m_physical_page = physical_page;
     }
 
-    bool map() {
+    bool map(Process* process) {
       if(m_physical_page < KERNEL_END)
         return false;
       u64 v_page = m_virtual_page;
@@ -55,23 +46,32 @@ class VMObject {
       u16 pd_index = (v_page >> 21) & 0x1FF;
       u16 pt_index = (v_page >> 12) & 0x1FF;
       
-      u64* pml4 = (m_process->pml4)+pml4_index;
-      u64* pdpt = (m_process->pdpt)+pdpt_index;
-      u64* pd = (m_process->pd)+pd_index;
-      u64* pt = (m_process->pt)+pt_index;
+      u64* pml4_entry = (process->pml4)+pml4_index;
+      u64* pdpt_entry = (process->pdpt)+pdpt_index;
+      u64* pd_entry;
+      u64* pt_entry;
 
-      m_pt_location = pt;
 
-      if(!((*pd) & PG_PRESENT)) {
-        dbg("Page Directory %d indisponível\n", pd_index);
-        *pml4 = *pml4 | PG_PRESENT;
-        *pdpt = *pdpt | PG_PRESENT;
-        *pd = *pd | PG_PRESENT;
+      if(!((*pdpt_entry) & PG_PRESENT)) {
+        dbg("Page Directory %d indisponível, criando um novo\n", pd_index);
+        // PDPT e PML4 já são pré-alocados fixamente
+        *pml4_entry = *pml4_entry | PG_PRESENT;
+        *pdpt_entry = *pdpt_entry | PG_PRESENT;
+        pd_entry = (u64*) kmalloc(512 * sizeof(u64));
+        pt_entry = (u64*) kmalloc(512 * sizeof(u64));
+        
+        *pd_entry = *pt_entry & ~0xFFF; // obtém o endereço do PT sem considerar as flags
+        *pt_entry = (v_page * PAGE_SIZE) & ~0xFFF; // obtém o endereço da página virtual sem considerar as flags
+
+        // TODO flags para pd_entry e pt_entry q alocamos agora, se pa pro pml4 e pdpt tbm
+        m_pt_location = pt_entry;
       } else {
-        if((*pt) & PG_PRESENT)
+        // TODO get PD pointer and PT pointer
+        if((*pt_entry) & PG_PRESENT)
           return false;
-        *pt = *pt | PG_PRESENT;
+        *pt_entry = *pt_entry | PG_PRESENT;
         // TODO permissões
+        m_pt_location = pt_entry;
       }
     return true;
     }
@@ -100,10 +100,25 @@ class VMObject {
 
 class Region {
   private:
+    Memory::Vector<VMObject*> m_vm_objs;
+    Process* m_process;
+    u32 m_size;
   public:
     Region() {
       dbg("Nova região criada\n");
- 
+    }
+
+    bool map(VMObject *vm) {
+      if(vm == nullptr) {
+        throw_panic(0, "Passed nullptr to 'map_new_vm()'");
+      }
+      
+      m_vm_objs.append(vm);
+      m_size += 1; // 1 page
+
+      vm->map(m_process);
+
+      dbg("Alocado novo VMObject para Region\n");
     }
 };
 

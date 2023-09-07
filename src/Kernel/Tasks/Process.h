@@ -5,10 +5,27 @@
 #define PROCESS__
 
 #include "../Filesystem/Filesystem.h"
-#include "../Memory/Base_Mem.h"
+#include "../Memory/Memory.h"
 #include "../Utils/Base.h"
 #include "../Memory/Heap/Heap.h"
 #include "../Drivers/VIDEO/preload.h"
+
+class Process {
+  private:
+  public:
+    u64 pml4[512];
+    u64 pdpt[512];
+
+    char* m_name;
+
+    Memory::Vector<Region*> m_regions;
+
+    Process(char* name) : m_name(name) {
+      dbg("Processo %s criado", m_name);
+    }
+};
+
+
 #if 0
   enum state {
     RUNNING,
