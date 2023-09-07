@@ -22,6 +22,7 @@ unsigned char cursor[6 * SCALE_FACTOR][2] = {
 
 
 #include "../../Core/DefaultConfig.h"
+#include "../../HAL/HAL.h"
 
 unsigned int cursor_location[] = {30,30};
 
@@ -51,7 +52,7 @@ void NewLine() {
   video_width = (volatile unsigned int)0;
 }
 
-void Write(const char* string, char color = 0x07) {
+void Write(const char* string, char color) {
   for(int i = 0; string[i]!=0; i++) {
      video_addr[(video_height * DEFAULT_VIDEO_WIDTH + video_width) * 2] = string[i];
      video_addr[(video_height * DEFAULT_VIDEO_WIDTH + video_width) * 2 + 1] = color;
@@ -66,7 +67,8 @@ void Write(const char* string, char color = 0x07) {
      }
   }
 }
-void Writeln(const char* string, char color = 0x07) {
+void Writeln(const char* string, char color) {
+  //system.dump_stack();
   Write(string, color);
   NewLine();
 }

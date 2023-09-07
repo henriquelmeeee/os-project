@@ -79,12 +79,16 @@ alignas(4096) Memory::PTEntry kPT[512][512];
 
 HAL::System system = HAL::System();
 
-extern "C" void kmain(BootloaderInfo* info) { // point kernel
+extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point kernel
   CLI;
-  
+ 
+  u64* rbp;
+  __asm__ volatile("mov %%rbp, %0" : "=r" (rbp));
+  dbg("RBP for kmain(): %p\n", rbp);
+  dbg("*RBP for kmain(): %p\n", (void*)*rbp);
+  dbg("*(RBP+8) for kmain(): %p, kentrypoint() address: %p\n", (void*)(*(rbp+1)), (void*)kentrypoint);
   Text::text_clear();
   Text::Writeln("Loading kernel", 9);
-  throw_panic(0, "teste");
   // TODO check if BootloaderInfo is corrupted
   
   if(info == 0) {
@@ -227,7 +231,6 @@ extern "C" void kmain(BootloaderInfo* info) { // point kernel
   
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
-#if 0
   FS filesystem;
   Text::NewLine();
 
@@ -241,7 +244,6 @@ extern "C" void kmain(BootloaderInfo* info) { // point kernel
   Text::NewLine();
   Text::Writeln("Kernel: Shell will be spawned", 2);
   while(true);
-#endif
 
   Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
   CreateKernelProcess((void*)KernelTask::Watchdog);

@@ -13,6 +13,8 @@
 
 #define PORT (unsigned short)0x3f8 /* COM1 register, for control */
 
+#define KERNEL_START 10485760
+
 struct IDT_ptr {
   unsigned short limit;
   unsigned long base;
@@ -149,13 +151,17 @@ namespace HAL {
         acpi.enable();
       }
 
-      bool dump_stack() {
+      bool volatile __attribute__((noinline)) dump_stack() {
         u64* rbp;
         __asm__ volatile("mov %%rbp, %0" : "=r"(rbp));
 
         Text::NewLine();
-        while( *rbp > 1 MB) {
-          Symbols::Symbol* sym = Symbols::sym_lookup((void*) (*(rbp+1)));
+        while(*rbp > KERNEL_START) {
+          if(!rbp)
+            break;
+          u64* ret_addr = rbp;
+          ret_addr+=1;
+          Symbols::Symbol* sym = Symbols::sym_lookup((void*)ret_addr);
           if(sym != nullptr) {
             Text::Write("Call @ ");
             Text::Writeln(sym->name);
@@ -163,8 +169,6 @@ namespace HAL {
             char buffer[32];
           
             itoh(*(rbp+1), buffer);
-            if(rbp == nullptr)
-              break;
             Text::Write("Call @0x");
             Text::Writeln(buffer);
           }

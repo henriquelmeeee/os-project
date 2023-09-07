@@ -7,6 +7,7 @@
 //#include "../../HAL/HAL.h"
 
 extern "C" void kmain(BootloaderInfo* info);
+extern "C" __attribute__((sysv_abi)) void kentrypoint(BootloaderInfo* info);
 
 namespace Symbols {
 
