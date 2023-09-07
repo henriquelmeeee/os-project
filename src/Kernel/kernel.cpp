@@ -252,7 +252,6 @@ extern "C" void kmain(BootloaderInfo* info) { // point kernel
 #endif
 
   Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
-  halt();
   CreateKernelProcess((void*)KernelTask::Watchdog);
   system.append_idt((unsigned long)KernelTask::Watchdog, 32);
 
@@ -276,6 +275,11 @@ outb(0xA1, 0x0);
   outb(0x40, high);
  
   system.DoAutomatedTests();
+
+  void* teste = (void*)kmalloc(96);
+  dbg("teste alocado\n");
+
+  dump_kernel_heap();
 
   while(true);
 

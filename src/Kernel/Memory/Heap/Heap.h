@@ -26,33 +26,36 @@ struct PhysicalRegion {
 
 extern PhysicalRegion regions[512];
 
-PhysicalRegion kmmap(u64 size=32);
+PhysicalRegion kmmap(u64 size=512);
+
+class Arena;
 
 struct ArenaHeader {
   PhysicalRegion region;
   u16 offset_first_chunk;
   u64 size;
+  Arena* next;
 };
 
 struct Chunk {
   u32 size;
   bool exists;
   bool freed;
-  Chunk* next_chunk;
   char a; // TODO só pra completar 16 bytes
   char b; // TODO só pra completar 16 bytes
 };
 
 class Arena {
   private:
-    ArenaHeader m_start = {};
     bool m_full = false;
     
   public:
+    ArenaHeader m_header = {};
     Arena() {
-      m_start.region = kmmap();
-      dbg("Kernel: Heap: Created new arena @ %p\n", &m_start.region);
-      m_start.size = m_start.region.end_address - m_start.region.start_address;
+      m_header.region = kmmap();
+      dbg("Kernel: Heap: Created new arena @ %p\n", &m_header.region);
+      m_header.size = m_header.region.end_address - m_header.region.start_address;
+      m_header.next = nullptr;
     }
 
     bool is_full() {
@@ -61,7 +64,7 @@ class Arena {
 
     Chunk* a_malloc(u32 size) {
       // Iterate over all chunks at this arena
-      for(u64 i = (m_start.region.start_address)+sizeof(ArenaHeader); i!=m_start.region.end_address;) {
+      for(u64 i = (m_header.region.start_address)+sizeof(ArenaHeader); i!=m_header.region.end_address;) {
         Chunk* chunk = (Chunk*)i;
         if(chunk->exists && !(chunk->freed)) {
           i+=chunk->size;
@@ -75,10 +78,12 @@ class Arena {
         if(!(chunk->exists)) {
           chunk->size = size;
           chunk->freed = false;
+          chunk->exists = true;
           return chunk;
         }
       }
-      dbg("Warning: no free chunk found\n");
+      dbg("kmalloc(): Nenhuma chunk livre encontrada na arena atual\n");
+      this->m_full = true;
       return nullptr;
     }
 
@@ -86,7 +91,7 @@ class Arena {
 
 extern unsigned long number_of_chunks;
 
-extern Arena arenas[32];
+extern Arena* arenas;
 
 bool initialize();
 
@@ -97,4 +102,6 @@ Chunk* kmalloc(u32 size);
 //signed int kfind_chunk_by_addr(struct Chunk* chunk_addr);
 
 bool kfree(void* chunk_addr);
+
+void dump_kernel_heap();
 #endif

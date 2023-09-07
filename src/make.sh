@@ -117,7 +117,7 @@ truncate ../Build/disk.img --size=100M
 #VBoxManage internalcommands sethduuid ../Build/disk.vdi
 
 echo "Building user-land stuff"
-python3 build_userland.py
+python3 ../Userland/build_userland.py
 
 rm prekernel.asm
 rm bootloader.asm
