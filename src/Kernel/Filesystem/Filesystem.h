@@ -70,6 +70,7 @@ struct ext2_group_desc {
   u16 bg_used_dirs_count;
   u16 bg_pad;
   u32 bg_reserved[3];
+  char padding[512 - 32 - 16*4 - 32*3];
 } __attribute__((packed));
 
 class FS {
@@ -114,13 +115,17 @@ class FS {
       read_from_sector((char*)&sb, entry_sector+EXT2_SUPERBLOCK_START);
       block_size = 1024 << (sb.s_log_block_size);
       dbg("block_size %d\n", block_size /*sb.s_log_block_size*/);
-      //read_from_sector(((char*)&sb)+512, EXT2_PARTITION_START);
+      read_from_sector(((char*)&sb)+512, entry_sector+EXT2_SUPERBLOCK_START+1);
+
+      dbg("first block group descriptor is at @%d (always 0 for block_size>1024)\n", sb.s_first_data_block);
+
+      read_from_sector((char*)&group_desc, ((sb.s_first_data_block)+entry_sector+2));
       calculate_root_inode_location();
 
       read_disk_block(0, root_inode_location, &root_inode);
-      first_data_block = root_inode.i_block[0];
+      //first_data_block = root_inode.i_block[0];
 
-      read_disk_block(0, first_data_block, &dir_entry);
+      //read_disk_block(0, first_data_block, &dir_entry);
 
     }
 
@@ -129,16 +134,22 @@ class FS {
         throw_panic(0, "invalid path todo remover esse panic e adicionar algo melhor tipo localizacao relativa");
       }
 
-      ext2_inode tmp = root_inode;
-      if(root_inode.i_block[0] != 0) {
-        ext2_dir_entry block_data[block_size];
-        read_disk_block(0, root_inode.i_block[0], (char*)block_data);
-
-        dbg("entry name: %s\n", block_data->name);
-        __asm__ volatile("hlt");
-      } else {
-        dbg("arquivo não encontrado (hard coded para um unico bloco para teste)\n");
+      if(root_inode.i_blocks < 1) {
+        dbg("i_blocks < 1\n");
+        return nullptr;
       }
+
+      ext2_inode tmp = root_inode;
+      for(int i = 0; i < 12; i++) {
+        if(root_inode.i_block[i] != 0) {
+          ext2_dir_entry block_data[block_size];
+          read_disk_block(0, root_inode.i_block[i], (char*)block_data);
+          dbg("entry name: %s\n", block_data->name);
+          return nullptr;
+        }
+      }
+      
+      dbg("arquivo não encontrado (hard coded para um unico bloco para teste)\n");
 
 
 
