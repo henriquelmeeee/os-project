@@ -35,7 +35,6 @@ outw(0x3D4, 0xE317); // Text-Mode Blinking
   dbg("kmain() pointer: %p\n", (void*)kmain);
   write(("Kernel panic!"));
   system.dump_stack();
-  newline;
   write(msg);
   newline;
   newline;

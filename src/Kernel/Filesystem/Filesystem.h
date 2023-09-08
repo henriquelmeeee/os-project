@@ -51,6 +51,7 @@ struct ext2_inode {
     u32 i_dir_acl;
     u32 i_faddr;
     u8  i_osd2[12];
+    char padding[512 - sizeof(u16)*6 - sizeof(u32)*28 - sizeof(u8)*12];
 } __attribute__((packed));
 
 struct ext2_dir_entry {
@@ -64,13 +65,13 @@ struct ext2_dir_entry {
 struct ext2_group_desc {
   u32 bg_block_bitmap;
   u32 bg_inode_bitmap;
-  u32 bg_inode_table;
+  u32 bg_inode_table; // bloco onde a tabela de inodes começa neste grupo de blocos
   u16 bg_free_blocks_count;
   u16 bg_free_inodes_count;
   u16 bg_used_dirs_count;
   u16 bg_pad;
   u32 bg_reserved[3];
-  char padding[512 - 32 - 16*4 - 32*3];
+  char padding[512-32-32-32-16-16-16-16-32-32-32];
 } __attribute__((packed));
 
 class FS {
@@ -82,18 +83,36 @@ class FS {
 
     u32 root_inode_location = 0;
     u32 first_data_block = 0;
-    u32 block_size = 0;
+    u32 block_size = 4096;
 
+    u32 m_inode_size = 128;
     u32 m_entry_sector = 0;
 
-    bool calculate_root_inode_location() {
-      u32 inode_table_start = group_desc.bg_inode_table;
-      u32 inode_size = 128;
-      
-      root_inode_location = inode_table_start + (2 - 1) * inode_size;
-
+    bool calculate_inode_table_location() {
+      u32 inode_table_start_block = group_desc.bg_inode_table;
+#if 0
+      if(m_entry_sector < 512) {
+        throw_panic(0, "Ext2FS: Invalid 'm_entry_sector', expected >512, get <512");
+      }
+#endif
+      root_inode_location = (inode_table_start_block * 4096) / 512;
+      dbg("group_desc.bg_inode_table: %d\n", group_desc.bg_inode_table);
+      dbg("inode_table sector: %d\n", root_inode_location);
+      dbg("block_size %d\n", block_size /*sb.s_log_block_size*/);
+      //root_inode_location = (root_inode_location + (/*m_entry_sector*/1000 * 512)) / 512;
+      root_inode_location+=1000;
+      dbg("inode_table sector + offset: %d\n", root_inode_location);
       return true;
     }
+
+    bool calculate_bg_location() {
+      u32 group_descriptor_block = sb.s_first_data_block + 1;
+      u32 group_descriptor_offset = (group_descriptor_block * block_size) / 512;
+      dbg("group_descriptor_block: %d\ngroup_descriptor_offset sector: %d\n", group_descriptor_block, group_descriptor_offset+m_entry_sector);
+      read_from_sector((char*)&group_desc, group_descriptor_offset+m_entry_sector); 
+      return true;
+    }
+
     bool read_disk_block(u32 block_group_index, u32 block_number, void* buffer) {
       u32 offset = (block_number * block_size) + m_entry_sector;
       dbg("Ext2FS::read_disk_block() offset = %d\n", offset);
@@ -106,23 +125,57 @@ class FS {
   public:
 
     FS(u32 entry_sector = EXT2_PARTITION_START) {
+      /*
+       Primeiro bloco (0-4096): superbloco (começa no offset 1024)
+       Segundo bloco (4096-8096): struct para o primeiro grupo de blocos
+       Cada entrada no inode_table tem 128 bytes de tamanho
+       e o root_inode normalmente é a segunda entrada nesta tabela
+      */
+
+      this->m_inode_size = 128;
+
       if(entry_sector == EXT2_PARTITION_START)
         dbg("Montando sistema de arquivos principal (ext2fs)\n");
       else
         dbg("Montando novo sistema de arquivos em %d\n", entry_sector);
-      m_entry_sector = entry_sector;
+      this->m_entry_sector = entry_sector;
+      dbg("m_entry_sector: %d\n", m_entry_sector);
 
-      read_from_sector((char*)&sb, entry_sector+EXT2_SUPERBLOCK_START);
-      block_size = 1024 << (sb.s_log_block_size);
+      read_from_sector((char*)&sb, entry_sector+2); // superblock
+      this->block_size = 1024 << (sb.s_log_block_size);
       dbg("block_size %d\n", block_size /*sb.s_log_block_size*/);
-      read_from_sector(((char*)&sb)+512, entry_sector+EXT2_SUPERBLOCK_START+1);
+      read_from_sector(((char*)&sb)+512, entry_sector+3); // superblock
 
-      dbg("first block group descriptor is at @%d (always 0 for block_size>1024)\n", sb.s_first_data_block);
+      calculate_bg_location();
+      calculate_inode_table_location();
 
-      read_from_sector((char*)&group_desc, ((sb.s_first_data_block)+entry_sector+2));
-      calculate_root_inode_location();
+      // Agora que temos o setor da tabela de inodes,
+      // precisamos reajustar "root_inode" para conter os valores de first_inode_table[1]
 
-      read_disk_block(0, root_inode_location, &root_inode);
+      read_from_sector((char*)&root_inode, root_inode_location);
+      u32 root_inode_index = 2;
+      dbg("m_inode_size: %d\n", m_inode_size);
+      u32 root_inode_offset = (root_inode_index) * 128;
+      
+
+      char* root_inode_as_ptr = (char*) &root_inode_location;
+      root_inode_as_ptr+=root_inode_offset;
+      ext2_inode* tmp = (ext2_inode*) root_inode_as_ptr;
+      root_inode = (ext2_inode) *tmp; 
+
+      if(root_inode.i_mode == 0) {
+        throw_panic(0, "i_mode invalid (=0)");
+      }
+      for(int i = 0;;i++) {
+        if(root_inode.i_block[i] != 0) {
+          dbg("arquivo encontrado\nroot_inode.i_block[%d] = %d\n", i, root_inode.i_block[i]);
+          __asm__ volatile("hlt");
+        }
+        if(i == 12) {
+          throw_panic(0, "todo nenhum arquivo encontrado em root_inode");
+        }
+      }
+
       //first_data_block = root_inode.i_block[0];
 
       //read_disk_block(0, first_data_block, &dir_entry);
