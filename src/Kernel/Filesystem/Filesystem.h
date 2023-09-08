@@ -79,37 +79,6 @@ inline u32 block_to_sector(u32 block, u32 entry = 1000) {
     return ((block * 4096) / 512) + entry;
 }
 
-class File {
-
-};
-
-class Directory {
-  private:
-    ext2_inode m_inode;
-    ext2_dir_entry m_parent_dir_entry;
-  public:
-    Directory(ext2_inode inode, ext2_dir_entry dir_entry) : m_inode(inode), m_parent_dir_entry(dir_entry) {
-      dbg("Criado novo diretório\n");
-    }
-
-    void dump_files() {
-      ext2_dir_entry entry;
-      dbg("m_inode.i_block[0] == %d\n", m_inode.i_block[0]);
-      read_from_sector((char*)&entry, block_to_sector(m_inode.i_block[0], 1000));
-
-      u32 offset = 0;
-      while(offset < 4096) {
-        ext2_dir_entry* tmp_entry = (ext2_dir_entry*) ((char*)&entry)+offset;
-        if(tmp_entry->rec_len == 0)
-          break;
-        offset+=tmp_entry->rec_len;
-
-        dbg("arquivo em directory, nome: %s\n", tmp_entry->name);
-        return;
-      }
-    }
-};
-
 class FS {
   public:
     ext2_super_block m_sb;
@@ -189,7 +158,8 @@ class FS {
       dbg("Sistema de arquivos montado com sucesso!\n");
       dbg("M_ENTRY %d\n", m_entry);
       dump_root_files();
-      get_directory("/diretorio").dump_files();
+      dump_directory("/diretorio");
+      __asm__ volatile("hlt");
     }
 
     bool read_inode_block(char* dst, u32 block) {
@@ -202,21 +172,28 @@ class FS {
       Text::Writeln("Ext2FS: Listing /", 0xb);
       char buffer[m_block_size];
       read_from_sector(buffer, block_to_sector(m_root_inode.i_block[0]));
+      dump_dir_entry((ext2_dir_entry*) buffer);
+    }
 
+    void dump_dir_entry(ext2_dir_entry* dir_entry) {
+      char* buffer = (char*)dir_entry;
       u32 offset = 0;
       while(offset < m_block_size) {
-        ext2_dir_entry* entry = (ext2_dir_entry*)(buffer+offset);
+        ext2_dir_entry* entry = (ext2_dir_entry*) (buffer+offset);
         if(entry->rec_len > 0) {
           Text::Write("File: ", 0xb);
           Text::Writeln((const char*)entry->name);
           offset += entry->rec_len;
         } else {
-          break;
+          return;
         }
       }
     }
 
-    Directory get_directory(const char* path) {
+    void dump_directory(const char* path) {
+      // TODO criar uma func pra isso
+      // e retornar como um Vector
+      // quando o kmalloc() estiver funcionando adequadamente
       char directories_to_list[6][32] = {{0}};
       int x = -1;
       int y = 0;
@@ -234,6 +211,7 @@ class FS {
         }
       }
       if(c == '/') --dirs_to_list;
+
 
       dbg("directory /%s\n", (char*)directories_to_list[0]);
       dbg("dirs_to_list %d\n", dirs_to_list);
@@ -271,7 +249,10 @@ class FS {
               offset = 0;
 
               if(actual_dir == dirs_to_list) {
-                return Directory(current_inode, *entry);
+                dbg("Diretório encontrado\n");
+                Text::Writeln("Ext2FS: Listing /diretorio", 0xb);
+                dump_dir_entry((ext2_dir_entry*) buffer);
+                return;
               }
             }
 
@@ -279,14 +260,14 @@ class FS {
           
           } else {
             dbg("entrada inválida\n");
-            return Directory({0}, {0});
+            return;
           }
 
         }
       }
     }
 
-    void* open(const char* path) {}
+    void* open(const char* path) {return nullptr;}
 };
 
 // OLD custom filesystem
