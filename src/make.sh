@@ -129,6 +129,9 @@ sudo cp ../Userland/teste /mnt/k_tmp
 sudo rm -rf /mnt/k_tmp/lost+found 2>/dev/null
 echo "User-land:"
 ls -lah /mnt/k_tmp
+
+sync
+
 sudo umount /mnt/k_tmp
 sudo losetup -d /dev/loop0
 sudo rm -rf /mnt/k_tmp

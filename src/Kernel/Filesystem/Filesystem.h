@@ -9,6 +9,7 @@
 #include "../Drivers/VIDEO/preload.h"
 
 #define EXT2_PARTITION_START 1000
+#define EXT2_SUPERBLOCK_START 2
 
 struct ext2_super_block {
     u32 s_inodes_count;
@@ -29,7 +30,7 @@ struct ext2_super_block {
     u16 s_magic;
     // ... e mais campos
     u8 s_padding[940]; // Espaço para preencher até 1024 bytes
-};
+} __attribute__((packed));
 
 struct ext2_inode {
     u16 i_mode;
@@ -50,7 +51,7 @@ struct ext2_inode {
     u32 i_dir_acl;
     u32 i_faddr;
     u8  i_osd2[12];
-};
+} __attribute__((packed));
 
 struct ext2_dir_entry {
     u32 inode;
@@ -58,7 +59,7 @@ struct ext2_dir_entry {
     u8  name_len;
     u8  file_type;
     char name[512 - 8 - 8 - 16 - 32];  // Tamanho variável
-};
+} __attribute__((packed));
 
 struct ext2_group_desc {
   u32 bg_block_bitmap;
@@ -69,7 +70,7 @@ struct ext2_group_desc {
   u16 bg_used_dirs_count;
   u16 bg_pad;
   u32 bg_reserved[3];
-};
+} __attribute__((packed));
 
 class FS {
   private:
@@ -110,8 +111,9 @@ class FS {
         dbg("Montando novo sistema de arquivos em %d\n", entry_sector);
       m_entry_sector = entry_sector;
 
-      read_from_sector((char*)&sb, entry_sector);
-      block_size = 1024 << sb.s_log_block_size;
+      read_from_sector((char*)&sb, entry_sector+EXT2_SUPERBLOCK_START);
+      block_size = 1024 << (sb.s_log_block_size);
+      dbg("block_size %d\n", block_size /*sb.s_log_block_size*/);
       //read_from_sector(((char*)&sb)+512, EXT2_PARTITION_START);
       calculate_root_inode_location();
 
@@ -120,7 +122,6 @@ class FS {
 
       read_disk_block(0, first_data_block, &dir_entry);
 
-      dbg("block_size %d\n", block_size);
     }
 
     void* open(const char* path) {
