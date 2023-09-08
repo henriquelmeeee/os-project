@@ -74,6 +74,42 @@ struct ext2_group_desc {
   volatile char padding[512-256 + 512]; // FIXME padding apenas com 512-256 tá dando overflow
 } __attribute__((packed));
 
+inline u32 block_to_sector(u32 block, u32 entry = 1000) {
+    dbg("block %d to sector: %d\nm_block_size: %d\n", block, ((block*4096)/512) + entry, 4096);
+    return ((block * 4096) / 512) + entry;
+}
+
+class File {
+
+};
+
+class Directory {
+  private:
+    ext2_inode m_inode;
+    ext2_dir_entry m_parent_dir_entry;
+  public:
+    Directory(ext2_inode inode, ext2_dir_entry dir_entry) : m_inode(inode), m_parent_dir_entry(dir_entry) {
+      dbg("Criado novo diretório\n");
+    }
+
+    void dump_files() {
+      ext2_dir_entry entry;
+      dbg("m_inode.i_block[0] == %d\n", m_inode.i_block[0]);
+      read_from_sector((char*)&entry, block_to_sector(m_inode.i_block[0], 1000));
+
+      u32 offset = 0;
+      while(offset < 4096) {
+        ext2_dir_entry* tmp_entry = (ext2_dir_entry*) ((char*)&entry)+offset;
+        if(tmp_entry->rec_len == 0)
+          break;
+        offset+=tmp_entry->rec_len;
+
+        dbg("arquivo em directory, nome: %s\n", tmp_entry->name);
+        return;
+      }
+    }
+};
+
 class FS {
   public:
     ext2_super_block m_sb;
@@ -92,12 +128,13 @@ class FS {
 
     u32 m_first_block_group_descriptor_sector;
     
-    inline u32 block_to_sector(u32 block) {
-      dbg("block %d to sector: %d\nm_block_size: %d\n", block, ((block*m_block_size)/512) + m_entry, m_block_size);
-      return ((block * m_block_size) / 512) + m_entry;
-    }
+
 
     bool read_inode(u32 inode_number, ext2_inode* inode) {
+
+      // Inicialmente, leremos apenas do primeiro grupo de blocos
+      // mas para conseguirmos ler de outros grupos, basta ler sequencialmente no disco
+      // cada inode tem um identificador único
       u32 offset_within_table = (inode_number - 1) * m_inode_size;
       u32 sector_to_read = root_inode_table_sector + (offset_within_table/512);
       u32 offset_within_sector = offset_within_table % 512;
@@ -152,8 +189,7 @@ class FS {
       dbg("Sistema de arquivos montado com sucesso!\n");
       dbg("M_ENTRY %d\n", m_entry);
       dump_root_files();
-      list_directory("/diretorio");
-      
+      get_directory("/diretorio").dump_files();
     }
 
     bool read_inode_block(char* dst, u32 block) {
@@ -180,7 +216,7 @@ class FS {
       }
     }
 
-    void list_directory(const char* path) {
+    Directory get_directory(const char* path) {
       char directories_to_list[6][32] = {{0}};
       int x = -1;
       int y = 0;
@@ -211,192 +247,48 @@ class FS {
         read_from_sector(buffer, block_to_sector(current_inode.i_block[0]));
 
         u32 offset = 0;
+        // Iteração do atual dir_entry relativo ao 'current_inode':
         while(offset < m_block_size) {
           ext2_dir_entry* entry = (ext2_dir_entry*)(buffer + offset);
 
+          if(entry->name[0] == '.') {
+            offset+=entry->rec_len;
+            continue;
+          }
+          dbg("offset: %d\n", offset);
+
           if(entry->rec_len > 0) {
+            dbg("entry->rec_len > 0: true\n");
 
-            if(kstrncmp((const char*)entry->name, (const char*)directories_to_list[actual_dir], 32) == 0) {
+            dbg("diretório atual: %s\n", entry->name);
+
+            if(kstrcmp((const char*)entry->name, (const char*)directories_to_list[actual_dir]) == 0) {
               ++actual_dir;
-              read_inode(entry->inode, &current_inode);
 
+              read_inode(entry->inode, &current_inode);
               read_from_sector(buffer, block_to_sector(current_inode.i_block[0]));
 
               offset = 0;
 
               if(actual_dir == dirs_to_list) {
-                dbg("diretorio final encontrado\n");
-                __asm__ volatile("hlt");
+                return Directory(current_inode, *entry);
               }
-
             }
+
+            offset += entry->rec_len;
+          
+          } else {
+            dbg("entrada inválida\n");
+            return Directory({0}, {0});
           }
-          offset += entry->rec_len;
 
         }
       }
     }
 
     void* open(const char* path) {}
-
-
-#if 0
-      for(int direct_pointer = 0; direct_pointer < 12; direct_pointer++) {
-        if(m_root_inode.i_block[direct_pointer] == 0) {
-          continue;
-        } else {
-          ext2_dir_entry buffer[m_block_size];
-          read_inode_block((char*)&buffer, m_root_inode.i_block[direct_pointer]);
-          int offset = 0;
-
-          while(offset < m_block_size) {
-            ext2_dir_entry* dir_entry = (ext2_dir_entry*)(buffer+offset);
-            dbg("file name: %s\n", dir_entry->name);
-            offset += dir_entry->rec_len;
-          }
-
-        }
-      }
-#endif
-
 };
-#if 0
-class FS {
-  private:
-    ext2_super_block sb;
-    ext2_dir_entry dir_entry; // for root inode
-    ext2_inode root_inode;
-    ext2_group_desc group_desc;
 
-    u32 root_inode_location = 0;
-    u32 first_data_block = 0;
-    u32 block_size = 4096;
-
-    u32 m_inode_size = 128;
-    u32 m_entry_sector = 0;
-
-    bool calculate_inode_table_location() {
-      u32 inode_table_start_block = group_desc.bg_inode_table;
-#if 0
-      if(m_entry_sector < 512) {
-        throw_panic(0, "Ext2FS: Invalid 'm_entry_sector', expected >512, get <512");
-      }
-#endif
-      root_inode_location = (inode_table_start_block * 4096) / 512;
-      dbg("group_desc.bg_inode_table: %d\n", group_desc.bg_inode_table);
-      dbg("inode_table sector: %d\n", root_inode_location);
-      dbg("block_size %d\n", block_size /*sb.s_log_block_size*/);
-      //root_inode_location = (root_inode_location + (/*m_entry_sector*/1000 * 512)) / 512;
-      root_inode_location+=1000;
-      dbg("inode_table sector + offset: %d\n", root_inode_location);
-      return true;
-    }
-
-    bool calculate_bg_location() {
-      u32 group_descriptor_block = sb.s_first_data_block + 1;
-      u32 group_descriptor_offset = (group_descriptor_block * block_size) / 512;
-      dbg("group_descriptor_block: %d\ngroup_descriptor_offset sector: %d\n", group_descriptor_block, group_descriptor_offset+m_entry_sector);
-      read_from_sector((char*)&group_desc, group_descriptor_offset+m_entry_sector); 
-      return true;
-    }
-
-    bool read_disk_block(u32 block_group_index, u32 block_number, void* buffer) {
-      u32 offset = (block_number * block_size) + m_entry_sector;
-      dbg("Ext2FS::read_disk_block() offset = %d\n", offset);
-      for(int i = 0; i < block_size; i+=512) {
-        read_from_sector(((char*) buffer)+i, (offset+i)/512);
-      }
-      return true;
-    }
-
-  public:
-
-    FS(u32 entry_sector = EXT2_PARTITION_START) {
-      /*
-       Primeiro bloco (0-4096): superbloco (começa no offset 1024)
-       Segundo bloco (4096-8096): struct para o primeiro grupo de blocos
-       Cada entrada no inode_table tem 128 bytes de tamanho
-       e o root_inode normalmente é a segunda entrada nesta tabela
-      */
-
-      this->m_inode_size = 128;
-
-      if(entry_sector == EXT2_PARTITION_START)
-        dbg("Montando sistema de arquivos principal (ext2fs)\n");
-      else
-        dbg("Montando novo sistema de arquivos em %d\n", entry_sector);
-      this->m_entry_sector = entry_sector;
-      dbg("m_entry_sector: %d\n", m_entry_sector);
-
-      read_from_sector((char*)&sb, entry_sector+2); // superblock
-      this->block_size = 1024 << (sb.s_log_block_size);
-      dbg("block_size %d\n", block_size /*sb.s_log_block_size*/);
-      read_from_sector(((char*)&sb)+512, entry_sector+3); // superblock
-
-      calculate_bg_location();
-      calculate_inode_table_location();
-
-      // Agora que temos o setor da tabela de inodes,
-      // precisamos reajustar "root_inode" para conter os valores de first_inode_table[1]
-
-      read_from_sector((char*)&root_inode, root_inode_location);
-      u32 root_inode_index = 2;
-      dbg("m_inode_size: %d\n", m_inode_size);
-      u32 root_inode_offset = (root_inode_index) * 128;
-      
-
-      char* root_inode_as_ptr = (char*) &root_inode_location;
-      root_inode_as_ptr+=root_inode_offset;
-      ext2_inode* tmp = (ext2_inode*) root_inode_as_ptr;
-      root_inode = (ext2_inode) *tmp; 
-
-      if(root_inode.i_mode == 0) {
-        throw_panic(0, "i_mode invalid (=0)");
-      }
-      for(int i = 0;;i++) {
-        if(root_inode.i_block[i] != 0) {
-          dbg("arquivo encontrado\nroot_inode.i_block[%d] = %d\n", i, root_inode.i_block[i]);
-          __asm__ volatile("hlt");
-        }
-        if(i == 12) {
-          throw_panic(0, "todo nenhum arquivo encontrado em root_inode");
-        }
-      }
-
-      //first_data_block = root_inode.i_block[0];
-
-      //read_disk_block(0, first_data_block, &dir_entry);
-
-    }
-
-    void* open(const char* path) {
-      if(path[0] != '/' && false) {
-        throw_panic(0, "invalid path todo remover esse panic e adicionar algo melhor tipo localizacao relativa");
-      }
-
-      if(root_inode.i_blocks < 1) {
-        dbg("i_blocks < 1\n");
-        return nullptr;
-      }
-
-      ext2_inode tmp = root_inode;
-      for(int i = 0; i < 12; i++) {
-        if(root_inode.i_block[i] != 0) {
-          ext2_dir_entry block_data[block_size];
-          read_disk_block(0, root_inode.i_block[i], (char*)block_data);
-          dbg("entry name: %s\n", block_data->name);
-          return nullptr;
-        }
-      }
-      
-      dbg("arquivo não encontrado (hard coded para um unico bloco para teste)\n");
-
-
-
-      return nullptr;
-    }
-};
-#endif
 // OLD custom filesystem
 #if 0
 struct Binary {
