@@ -126,6 +126,8 @@ sudo mke2fs -t ext2 /dev/loop0
 sudo mkdir /mnt/k_tmp
 sudo mount /dev/loop0 /mnt/k_tmp
 sudo cp ../Userland/teste /mnt/k_tmp
+sudo mkdir /mnt/k_tmp/diretorio
+sudo touch /mnt/k_tmp/diretorio/diretorio_arquivo
 sudo rm -rf /mnt/k_tmp/lost+found 2>/dev/null
 echo "User-land:"
 ls -lah /mnt/k_tmp

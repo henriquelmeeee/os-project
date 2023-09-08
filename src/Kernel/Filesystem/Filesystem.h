@@ -29,7 +29,7 @@ struct ext2_super_block {
     i16 s_max_mnt_count;
     u16 s_magic;
     // ... e mais campos
-    u8 s_padding[940]; // Espaço para preencher até 1024 bytes
+    volatile u8 s_padding[940]; // Espaço para preencher até 1024 bytes
 } __attribute__((packed));
 
 struct ext2_inode {
@@ -51,7 +51,7 @@ struct ext2_inode {
     u32 i_dir_acl;
     u32 i_faddr;
     u8  i_osd2[12];
-    char padding[512 - sizeof(u16)*6 - sizeof(u32)*28 - sizeof(u8)*12];
+    volatile char padding[512 - sizeof(u16)*6 - sizeof(u32)*28 - sizeof(u8)*12];
 } __attribute__((packed));
 
 struct ext2_dir_entry {
@@ -59,7 +59,7 @@ struct ext2_dir_entry {
     u16 rec_len;
     u8  name_len;
     u8  file_type;
-    char name[512 - 8 - 8 - 16 - 32];  // Tamanho variável
+    volatile char name[512 - 8 - 8 - 16 - 32];  // Tamanho variável
 } __attribute__((packed));
 
 struct ext2_group_desc {
@@ -71,9 +71,196 @@ struct ext2_group_desc {
   u16 bg_used_dirs_count;
   u16 bg_pad;
   u32 bg_reserved[3];
-  char padding[512-32-32-32-16-16-16-16-32-32-32];
+  volatile char padding[512-256 + 512]; // FIXME padding apenas com 512-256 tá dando overflow
 } __attribute__((packed));
 
+class FS {
+  public:
+    ext2_super_block m_sb;
+    ext2_dir_entry m_dir_entry;
+    ext2_inode m_root_inode;
+    ext2_inode m_root_inode_table;
+    ext2_group_desc m_group_desc;
+
+    u32 m_entry = EXT2_PARTITION_START;
+
+    u32 root_inode_table_sector;
+    u32 inode_table_start_block;
+
+    u32 m_inode_size = 128;
+    u32 m_block_size = 4096;
+
+    u32 m_first_block_group_descriptor_sector;
+    
+    inline u32 block_to_sector(u32 block) {
+      dbg("block %d to sector: %d\nm_block_size: %d\n", block, ((block*m_block_size)/512) + m_entry, m_block_size);
+      return ((block * m_block_size) / 512) + m_entry;
+    }
+
+    bool read_inode(u32 inode_number, ext2_inode* inode) {
+      u32 offset_within_table = (inode_number - 1) * m_inode_size;
+      u32 sector_to_read = root_inode_table_sector + (offset_within_table/512);
+      u32 offset_within_sector = offset_within_table % 512;
+
+      char buffer[512];
+      read_from_sector(buffer, sector_to_read);
+
+      __builtin_memcpy((char*)inode, (char*) (buffer+offset_within_sector), sizeof(ext2_inode));
+
+      return true;
+    }
+
+    FS(u32 entry_sector = EXT2_PARTITION_START) {
+      dbg("Criando novo sistema de arquivos Ext2FS\n");
+      
+      this->m_entry = entry_sector;
+      u32 superblock_sector = entry_sector + 2;
+
+      dbg("superblock_sector: %d\nm_entry: %d\n", superblock_sector, m_entry);
+
+      read_from_sector((char*)&m_sb, superblock_sector);
+      read_from_sector(((char*)&m_sb)+512, superblock_sector+1);
+      dbg("magic sb: %d\n", m_sb.s_magic);
+      if(m_sb.s_magic != 61267) {
+        throw_panic(0, "Invalid magic number in ext2fs");
+      } 
+      dbg("m_sb.s_first_data_block: %d\nm_sb.s_inodes_count: %d\n", m_sb.s_first_data_block, m_sb.s_inodes_count);
+
+      m_first_block_group_descriptor_sector = m_sb.s_first_data_block + 1;
+      read_from_sector((char*)&m_group_desc, block_to_sector(m_first_block_group_descriptor_sector));
+
+
+      dbg("Calculando setor para 'm_root_inode'\n");
+
+      m_inode_size = 128;
+      m_block_size = 4096;
+
+      root_inode_table_sector = 0;
+      inode_table_start_block = m_group_desc.bg_inode_table; // bloco para o inode table
+      root_inode_table_sector = (inode_table_start_block * 4096) / 512;
+      root_inode_table_sector += 1000;
+
+      read_from_sector((char*)&m_root_inode, root_inode_table_sector);
+      m_root_inode_table = m_root_inode;
+
+      u32 root_inode_index = 2;
+
+      char* root_inode_tmp = (char*) &m_root_inode;
+      root_inode_tmp+=(root_inode_index*m_inode_size);
+      m_root_inode = *((ext2_inode*) root_inode_tmp);
+
+      dbg("Sistema de arquivos montado com sucesso!\n");
+      dbg("M_ENTRY %d\n", m_entry);
+      dump_root_files();
+      list_directory("/diretorio");
+      
+    }
+
+    bool read_inode_block(char* dst, u32 block) {
+      // TODO cache em memória baseado no bloco ja lido
+      read_from_sector(dst, block_to_sector(block));
+      return true;
+    }
+
+    void dump_root_files() {
+      Text::Writeln("Ext2FS: Listing /", 0xb);
+      char buffer[m_block_size];
+      read_from_sector(buffer, block_to_sector(m_root_inode.i_block[0]));
+
+      u32 offset = 0;
+      while(offset < m_block_size) {
+        ext2_dir_entry* entry = (ext2_dir_entry*)(buffer+offset);
+        if(entry->rec_len > 0) {
+          Text::Write("File: ", 0xb);
+          Text::Writeln((const char*)entry->name);
+          offset += entry->rec_len;
+        } else {
+          break;
+        }
+      }
+    }
+
+    void list_directory(const char* path) {
+      char directories_to_list[6][32] = {{0}};
+      int x = -1;
+      int y = 0;
+      char c;
+      int dirs_to_list = 0;
+      for(int i = 0; path[i]!=0; i++) {
+        c = path[i];
+        if(c == '/') {
+          x++;
+          y = 0;
+          ++dirs_to_list;
+        } else {
+          directories_to_list[x][y] = c;
+          ++y;
+        }
+      }
+      if(c == '/') --dirs_to_list;
+
+      dbg("directory /%s\n", (char*)directories_to_list[0]);
+      dbg("dirs_to_list %d\n", dirs_to_list);
+
+      ext2_inode current_inode = m_root_inode;
+      char buffer[m_block_size];
+
+      u32 actual_dir = 0;
+
+      while(actual_dir < dirs_to_list) {
+        read_from_sector(buffer, block_to_sector(current_inode.i_block[0]));
+
+        u32 offset = 0;
+        while(offset < m_block_size) {
+          ext2_dir_entry* entry = (ext2_dir_entry*)(buffer + offset);
+
+          if(entry->rec_len > 0) {
+
+            if(kstrncmp((const char*)entry->name, (const char*)directories_to_list[actual_dir], 32) == 0) {
+              ++actual_dir;
+              read_inode(entry->inode, &current_inode);
+
+              read_from_sector(buffer, block_to_sector(current_inode.i_block[0]));
+
+              offset = 0;
+
+              if(actual_dir == dirs_to_list) {
+                dbg("diretorio final encontrado\n");
+                __asm__ volatile("hlt");
+              }
+
+            }
+          }
+          offset += entry->rec_len;
+
+        }
+      }
+    }
+
+    void* open(const char* path) {}
+
+
+#if 0
+      for(int direct_pointer = 0; direct_pointer < 12; direct_pointer++) {
+        if(m_root_inode.i_block[direct_pointer] == 0) {
+          continue;
+        } else {
+          ext2_dir_entry buffer[m_block_size];
+          read_inode_block((char*)&buffer, m_root_inode.i_block[direct_pointer]);
+          int offset = 0;
+
+          while(offset < m_block_size) {
+            ext2_dir_entry* dir_entry = (ext2_dir_entry*)(buffer+offset);
+            dbg("file name: %s\n", dir_entry->name);
+            offset += dir_entry->rec_len;
+          }
+
+        }
+      }
+#endif
+
+};
+#if 0
 class FS {
   private:
     ext2_super_block sb;
@@ -209,7 +396,7 @@ class FS {
       return nullptr;
     }
 };
-
+#endif
 // OLD custom filesystem
 #if 0
 struct Binary {
