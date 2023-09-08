@@ -231,15 +231,17 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
-  FS filesystem;
+  FS filesystem = FS();
+  filesystem.open("/teste");
+  halt();
   Text::NewLine();
 
   Text::Writeln("Files in filesystem:", 3);
 
-  for(int i = 0; i < filesystem.total_inodes_amount; i++) {
+ // for(int i = 0; i < filesystem.total_inodes_amount; i++) {
     dbg("a");
-    Text::Writeln(filesystem.inodes[i].name);
-  }
+   // Text::Writeln(filesystem.inodes[i].name);
+  //}
 
   Text::NewLine();
   Text::Writeln("Kernel: Shell will be spawned", 2);

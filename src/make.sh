@@ -5,7 +5,7 @@ mkdir /tmp/backup 2> /dev/null
 mkdir /tmp/backup/src 2>/dev/null
 cp -r ../src/* /tmp/backup/src/
 
-rm ../Build/disk.img
+sudo rm ../Build/disk.img
 
 rm tmp.prekernel.asm
 rm tmp.bootloader.asm
@@ -118,10 +118,25 @@ truncate ../Build/disk.img --size=100M
 #VBoxManage internalcommands sethduuid ../Build/disk.vdi
 
 echo "Building user-land stuff"
-python3 ../Userland/build_userland.py
+#python3 ../Userland/build_userland.py
+sudo umount /dev/loop0 2>/dev/null
+sudo rm -rf /tmp/k_tmp
+sudo losetup --offset $((1000*512)) /dev/loop0 ../Build/disk.img
+sudo mke2fs -t ext2 /dev/loop0
+sudo mkdir /mnt/k_tmp
+sudo mount /dev/loop0 /mnt/k_tmp
+sudo cp ../Userland/teste /mnt/k_tmp
+sudo rm -rf /mnt/k_tmp/lost+found 2>/dev/null
+echo "User-land:"
+ls -lah /mnt/k_tmp
+sudo umount /mnt/k_tmp
+sudo losetup -d /dev/loop0
+sudo rm -rf /mnt/k_tmp
+sudo rm -rf /tmp/k_tmp
+
+
 
 rm prekernel.asm
 rm bootloader.asm
 
-sleep 1
 sh ../run.sh
