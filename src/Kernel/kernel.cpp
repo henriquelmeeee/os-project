@@ -80,8 +80,6 @@ alignas(4096) Memory::PTEntry kPT[512][512];
 HAL::System system = HAL::System();
 
 extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point kernel
-  CLI;
- 
   u64* rbp;
   __asm__ volatile("mov %%rbp, %0" : "=r" (rbp));
   dbg("RBP for kmain(): %p\n", rbp);
@@ -109,6 +107,11 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   if(!(system.init_serial_for_dbg()))
       Text::Writeln("Warning: cannot initialize serial for debugging", 0x4);
 
+  system.init_idt();
+  system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 33);
+  STI;
+  halt();
+  while(true);
   pages_in_use = (unsigned long*)kmalloc(PAGE_SIZE);
   if(pages_in_use == nullptr) {
     throw_panic(0, "kmalloc() returned nullptr");

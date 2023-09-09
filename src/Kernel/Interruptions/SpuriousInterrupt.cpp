@@ -10,6 +10,7 @@ struct SpuriousInterrupt {
 
 extern "C" __attribute__((interrupt)) void i_spurious(SpuriousInterrupt *s) {
   CLI;
+  __asm__ volatile("hlt");
   dbg("Interrupts::i_spurious()-> interrupção desconhcida acionada\n");
   __asm__ volatile("hlt");
   /*for(unsigned long i = 0; i<s->int_no; i++) {

@@ -15,11 +15,6 @@
 
 #define KERNEL_START 10485760
 
-struct IDT_ptr {
-  unsigned short limit;
-  unsigned long base;
-} __attribute__((packed));
-
   struct RSDP {
     char signature[8];
     char sum;
@@ -91,7 +86,7 @@ class ACPI {
           if(buf->revision > 0) {
             xsdt_in_use = true;
             rsdp.xsdt_addr = buf->xsdt_addr;
-            dbg("XSDT found!\n");
+            dbg("XSDT found!");
             // currently we will just use RSDP.
           }
 
@@ -192,22 +187,31 @@ namespace HAL {
       }
 
       bool append_idt(u64 addr, u32 offset) {
+        if(addr == 0) {
+          throw_panic(0, "Invalid ISR address");
+        }
+
+        dbg("append_idt addr: %p offset: %d", (void*)addr, offset);
+        
+
         u16 selector = 0x08;
         u8 flags = 0x8E;
-        u64 entry = ((u64)flags << 40) |
-          ((u64)selector << 16) |
-          (addr & 0xFFFF) |
-          ((addr & 0xFFFF0000) << 32) |
+        u64 entry = 
+          (u64)(addr & 0xFFFF) | 
+          ((u64)selector << 16) | 
+          ((u64)flags << 32) | 
+          ((addr & 0xFFFF0000) << 32) | 
           ((u64)(addr >> 32) << 48);
 
         IDT_entries[offset] = entry;
+
+        dbg("IDT_entries[33] = %p", (void*) IDT_entries[offset]);
 
         return true;
       }
 
       bool init_idt() {
-        for(auto entry : IDT_entries)
-          __builtin_memset(&entry, 0, 8);
+        __builtin_memset(IDT_entries, 0, sizeof(IDT_entries));
 
         for(int i = 0; i<255; i++)
           append_idt(reinterpret_cast<u64>(i_spurious), i);
@@ -243,13 +247,14 @@ namespace HAL {
         outb(PIC1_DATA, 0x04); 
         outb(PIC2_DATA, 0x02);
 
-        outb(PIC1_DATA, PIC_ICW4);
-        outb(PIC2_DATA, PIC_ICW4);
+        outb(PIC1_DATA, /*PIC_ICW4*/0x01);
+        outb(PIC2_DATA, /*PIC_ICW4*/0x01);
 
         // Desmascarando interrupção do teclado e timer apenas
       
-        outb(PIC1_DATA, 0xFD);
-        outb(PIC2_DATA, 0xFF);
+        outb(PIC1_DATA, 0xFD); // desmascara teclado
+        outb(PIC2_DATA, 0xFF); // mascara tudo da PIC2
+        
 
         return true;
       }

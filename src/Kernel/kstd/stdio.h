@@ -270,6 +270,7 @@ inline void dbg(const char *format, ...) {
     for (int i = 0; buffer[i] != '\0'; ++i) {
         outb(0x3F8, buffer[i]);
     }
+    outb(0x3F8, '\n');
     va_end(args);
 }
 

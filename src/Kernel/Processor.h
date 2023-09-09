@@ -5,6 +5,7 @@
 
 #include "Memory/Base_Mem.h"
 
+#if 0
 enum DeviceType {
   PS2,
   Unknown,
@@ -38,11 +39,11 @@ class Keyboard : public PS2 {
 
     Keyboard() {}
 };
-
+#endif
 class CPU {
   public:
     unsigned short id;
-    Memory::Vector<Device*> devices;
+    //Memory::Vector<Device*> devices;
 
     unsigned long get_eax(unsigned long *to_ret) {
       return 1; // TODO FIXME implement that

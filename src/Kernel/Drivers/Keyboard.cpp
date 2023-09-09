@@ -1,22 +1,20 @@
 #include "../Utils/Base.h"
 #include "../Core/panic.h"
 #include "../Memory/Base_Mem.h"
-
+#include "Keyboard.h"
 struct KeyboardInterrupt {
   u64 rip;
   u64 cs;
-  u64 flags;
+  u64 rflags;
   u64 rsp;
   u64 ss;
-  u8 scancode;
 };
-
 namespace Drivers{
 namespace Keyboard {
 
-  unsigned int keys[255];
+  //unsigned int keys[255];
 
-  unsigned char scancodes[] = {
+  /*unsigned char scancodes[] = {
     '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U',
     'I', 'O', 'P', '[', ']', '\0', '\0', 'A',
     'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';',
@@ -24,23 +22,25 @@ namespace Keyboard {
     'N', 'M', ',', '.', '/', '\0', '\0', '\0', '\0',
     '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
     '\0', '\0', '\0', '\0'
-  };
+  };*/
+
+  /*
 
   bool caps = false;
   bool shift = false;
 
-  void NO_CALLER_SAVED_REGISTERS handle_caps() {
+  void handle_caps() {
     // ...
     STI; // retorna as interrupções
   }
 
-  void NO_CALLER_SAVED_REGISTERS clear_key_list() {
+  void clear_key_list() {
     for(short x = 0; x < 255; x++) {
       keys[x] = 0;
     }
   }
   int last_key = 0;
-  void NO_CALLER_SAVED_REGISTERS continue_handle(unsigned int scancode) {
+  void continue_handle(unsigned int scancode) {
     dbg("continue_handle()-> Rotina alcançada\n");
     if(scancodes[scancode] == 0)
       return;
@@ -61,7 +61,7 @@ namespace Keyboard {
   }
 
   #define READ_KEYBOARD_STATUS 0x64 // há mesmo algum scancode para ler?
-  
+  */
   /*
    * -> Toda interrupção de teclado precisa de um EOI, enquanto não houver,
    *    interrupções subjacentes ficarão numa pool da PIC
@@ -69,8 +69,11 @@ namespace Keyboard {
    *    corretamente.
   */    
 
-  void __attribute__((interrupt)) keyboard_interrupt_key(KeyboardInterrupt *s) {
+  void/* NO_CALLER_SAVED_REGISTERS*/ keyboard_interrupt_key(KeyboardInterrupt *s) {
     CLI;
+    __asm__ volatile("hlt");
+
+#if 0
     dbg("keyboard_interrupt_key()\n");
     unsigned char status;
     unsigned char scancode;
@@ -112,6 +115,7 @@ namespace Keyboard {
     outb(0xA0, 0x20);
     IRET;
     throw_panic(0, "Unable to return from interruption handler");
+#endif
   }
 
 }
