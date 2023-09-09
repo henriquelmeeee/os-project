@@ -10,9 +10,21 @@
 #include "../Interruptions/preload.h"
 
 #include "../Core/Debugging/Symbols.h"
+#include "../Drivers/Keyboard.h"
 
 #define PORT (unsigned short)0x3f8 /* COM1 register, for control */
 
+struct IDTEntry16 {
+  u16 offset_low;
+  u16 selector = 0x08;
+  u8 ist;
+  u8 flags;
+  u16 offset_middle;
+  u32 offset_high;
+  u32 reserved;
+} __attribute__((packed));
+
+alignas(4096) u64 IDT_entries[256*2];
 #define KERNEL_START 10485760
 
   struct RSDP {
@@ -114,7 +126,6 @@ namespace HAL {
     private:
       ACPI acpi;
     public:
-      alignas(4096) unsigned long IDT_entries[256];
       unsigned long long TOTAL_RAM;
 
       System() {
@@ -186,26 +197,52 @@ namespace HAL {
         return true;
       }
 
+
       bool append_idt(u64 addr, u32 offset) {
         if(addr == 0) {
           throw_panic(0, "Invalid ISR address");
         }
 
         dbg("append_idt addr: %p offset: %d", (void*)addr, offset);
-        
 
+        u64 low_bits = ((u64)0x08 << 16); // seletor
+        low_bits |= (addr & 0xFFFF);
+        low_bits |= ((u64)0x8E << 40); // flags
+
+        u64 high_bits = ((addr >> 16) & 0xFFFF);
+        high_bits |= ((addr>>32) & 0xFFFFFFFFULL) << 32;
+
+
+        u64* idt_entry = &IDT_entries[offset * 2];
+        *idt_entry = low_bits;
+        *(idt_entry + 1) = high_bits;
+#if 0
+        u32 idx = offset * 2;
+        IDT_entries[idx] = low_bits;
+        IDT_entries[idx + 1] = high_bits;
+#endif
+#if 0
         u16 selector = 0x08;
         u8 flags = 0x8E;
-        u64 entry = 
+        u128 entry = 
           (u64)(addr & 0xFFFF) | 
           ((u64)selector << 16) | 
           ((u64)flags << 32) | 
           ((addr & 0xFFFF0000) << 32) | 
           ((u64)(addr >> 32) << 48);
+        struct IDTEntry16* entry = &(IDT_entries[offset]);
+        entry->selector = 0x08;
+        entry->offset_low = (u16)(addr & 0xFFFF);
+        entry->ist = 0;
+        entry->flags = 0x8E;
+        entry->offset_middle = (u16)((addr >> 16) & 0xFFFF);
+        entry->offset_high = (u32)((addr >> 32) & 0xFFFFFFFF);
+        entry->reserved = 0;
 
-        IDT_entries[offset] = entry;
+#endif
 
-        dbg("IDT_entries[33] = %p", (void*) IDT_entries[offset]);
+
+        dbg("addr de Drivers::Keyboard::keyboard_interrupt_key = %p\naddr enviado = %p", (void*)Drivers::Keyboard::keyboard_interrupt_key, (void*)addr);
 
         return true;
       }

@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef BITMAP
 #define BITMAP
 

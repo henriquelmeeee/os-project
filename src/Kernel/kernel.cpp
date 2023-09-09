@@ -109,6 +109,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   system.init_idt();
   system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 33);
+  system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 13);
   STI;
   halt();
   while(true);

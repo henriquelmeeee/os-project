@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef PRELOAD_VIDEO
 #define PRELOAD_VIDEO
 #define RES_WIDTH 800

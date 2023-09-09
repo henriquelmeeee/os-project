@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef VIDEO
 #define VIDEO
 namespace Text{
