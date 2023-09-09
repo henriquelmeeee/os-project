@@ -45,12 +45,15 @@ void* kmalloc(u32 size = 32) {
       current_chunk->freed = false;
       --number_of_free_chunks;
       ++number_of_chunks;
+      dbg("kmalloc()-> encontrado chunk livre: 0x%p\n", (void*)((char*)current_chunk+sizeof(Chunk)));
       return (void*) ((char*)current_chunk+sizeof(Chunk));
     }
     if(!(current_chunk->exists)) {
       ++number_of_chunks;
       current_chunk->size = size;
       current_chunk->freed = false;
+      current_chunk->exists = true;
+      dbg("kmalloc()-> encontrado endereço disponível: 0x%p\n", (void*)((char*)current_chunk+sizeof(Chunk)));
       return (void*) ((char*)current_chunk+sizeof(Chunk));
     }
     // TODO cuidar de overflow 
@@ -62,18 +65,26 @@ bool kfree(void* chunk_addr) {
 
   Chunk* chunk = (Chunk*) ((char*)chunk_addr - sizeof(Chunk));
   if(!(chunk->freed)) {
-    chunk->freed = true;
-    ++number_of_free_chunks;
-    --number_of_chunks;
+    if(!(chunk->exists)) {
+      dbg("kfree()-> AVISO: kfree() em %p mas essa chunk não existe!\n", chunk_addr);
+      // TODO talvez um stack trace para o dbg() ?
+    } else {
+      chunk->freed = true;
+      ++number_of_free_chunks;
+      --number_of_chunks;
+    }
   } else {
     throw_panic(0, "Double free on kernel-heap detected");
-  }
-  if(!(chunk->exists)) {
-    dbg("kfree()-> AVISO: kfree() em %p mas essa chunk não existe!\n", chunk_addr);
-    // TODO talvez um stack trace para o dbg() ?
   }
   return true;
 }
 
 void dump_kernel_heap() {
+  dbg("Dump da Heap\n");
+  dbg("Endereço\t\tTamanho\n");
+  Chunk* current_chunk = (Chunk*)KERNEL_HEAP_START;
+  while(current_chunk->exists) {
+    dbg("0x%p\t\t%d\n", (void*) (((char*)current_chunk)+sizeof(Chunk)), current_chunk->size);
+    current_chunk = (Chunk*) (((char*)current_chunk) + current_chunk->size);
+  }
 }

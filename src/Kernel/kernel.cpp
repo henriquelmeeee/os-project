@@ -232,7 +232,8 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   //FS filesystem = FS();
   //filesystem.open("/teste");
   Text::NewLine();
-
+  dump_kernel_heap();
+  halt();
   Text::NewLine();
   Text::Writeln("Kernel: Shell will be spawned", 2);
   while(true);
@@ -261,7 +262,6 @@ outb(0xA1, 0x0);
   outb(0x40, high);
  
   system.DoAutomatedTests();
-  // dump_kernel_heap();
   while(true);
 
   
