@@ -1,0 +1,6 @@
+src/Kernel/tmp.bootloader.asm
+src/Kernel/tmp.prekernel.asm
+src/*.zip
+src/Kernel/bin/*
+src/.gdb_history
+Backup/*
