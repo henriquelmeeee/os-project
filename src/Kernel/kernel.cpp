@@ -109,8 +109,6 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   if(!(system.init_serial_for_dbg()))
       Text::Writeln("Warning: cannot initialize serial for debugging", 0x4);
 
-  initialize();
-
   pages_in_use = (unsigned long*)kmalloc(PAGE_SIZE);
   if(pages_in_use == nullptr) {
     throw_panic(0, "kmalloc() returned nullptr");
@@ -231,24 +229,16 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
-  FS filesystem = FS();
-  filesystem.open("/teste");
-  halt();
+  //FS filesystem = FS();
+  //filesystem.open("/teste");
   Text::NewLine();
-
-  Text::Writeln("Files in filesystem:", 3);
-
- // for(int i = 0; i < filesystem.total_inodes_amount; i++) {
-    dbg("a");
-   // Text::Writeln(filesystem.inodes[i].name);
-  //}
 
   Text::NewLine();
   Text::Writeln("Kernel: Shell will be spawned", 2);
   while(true);
 
   Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
-  CreateKernelProcess((void*)KernelTask::Watchdog);
+  //CreateKernelProcess((void*)KernelTask::Watchdog);
   system.append_idt((unsigned long)KernelTask::Watchdog, 32);
 
   outb(0x20, 0x11);
@@ -271,12 +261,7 @@ outb(0xA1, 0x0);
   outb(0x40, high);
  
   system.DoAutomatedTests();
-
-  void* teste = (void*)kmalloc(96);
-  dbg("teste alocado\n");
-
-  dump_kernel_heap();
-
+  // dump_kernel_heap();
   while(true);
 
   

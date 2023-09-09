@@ -5,10 +5,17 @@
 
 #include "Heap.h"
 
+// TODO nem todas variáveis abaixo estão sendo utilizadas
+// estou fazendo uma implementação mais simples do kmalloc(), sem uso de arenas
+// porque senão, se torna complexo atoa
+// e a prioridade agora é ter alocação dinâmica funcionando
+
+
+
 PhysicalRegion regions[512] = {0,0};
-Arena* arenas;
 u16 g_arenas_count = 0;
 
+#if 0
 PhysicalRegion kmmap(u64 size) {
   for(int i = 0; i<512; i++)
     if(regions[i].start_address == 0) {
@@ -23,61 +30,50 @@ PhysicalRegion kmmap(u64 size) {
   throw_panic(0, "TEMPORARIO TODO: NENHUMA REGIAO DISPONIVEL");
   return {};
 }
+#endif
 
 u64 number_of_chunks;
+u64 number_of_free_chunks;
 
-bool initialize() {
-  dbg("Kernel: Initializing heap\n");
-  arenas[0] = Arena();
-  return true;
-}
+#define KERNEL_HEAP_START 500000000
 
-Chunk* kmalloc(u32 size = 32) {
-  dbg("kmaalloc!\n");
-  i8 arena_to_use = -1;
-  for(int i = 0; i<32; i++)
-    if(! (arenas[i].is_full()) ) {
-      arena_to_use = i;
-      break;
+void* kmalloc(u32 size = 32) {
+  dbg("kmalloc()-> alocando %dB\n", size);
+  Chunk* current_chunk = (Chunk*)KERNEL_HEAP_START;
+  for(;;) {
+    if((current_chunk->freed) && (current_chunk->size >= size) && (current_chunk->exists)) {
+      current_chunk->freed = false;
+      --number_of_free_chunks;
+      ++number_of_chunks;
+      return (void*) ((char*)current_chunk+sizeof(Chunk));
     }
-
-  if(arena_to_use == -1) {
-    throw_panic(0, "Disponible arena not found\n");
-    return nullptr;
+    if(!(current_chunk->exists)) {
+      ++number_of_chunks;
+      current_chunk->size = size;
+      current_chunk->freed = false;
+      return (void*) ((char*)current_chunk+sizeof(Chunk));
+    }
+    // TODO cuidar de overflow 
+    current_chunk = (Chunk*) ( ((char*)current_chunk) + current_chunk->size);
   }
-  ++number_of_chunks;
-  return arenas[arena_to_use].a_malloc(size);
 }
 
 bool kfree(void* chunk_addr) {
-  throw_panic(0, "kfree() not implemented yet");
-  return false;
+
+  Chunk* chunk = (Chunk*) ((char*)chunk_addr - sizeof(Chunk));
+  if(!(chunk->freed)) {
+    chunk->freed = true;
+    ++number_of_free_chunks;
+    --number_of_chunks;
+  } else {
+    throw_panic(0, "Double free on kernel-heap detected");
+  }
+  if(!(chunk->exists)) {
+    dbg("kfree()-> AVISO: kfree() em %p mas essa chunk não existe!\n", chunk_addr);
+    // TODO talvez um stack trace para o dbg() ?
+  }
+  return true;
 }
 
 void dump_kernel_heap() {
-  // Precisamos iterar sobre todas as arenas através da lista encadeada
-  // seguindo ponteiros "next"
-  // para evitar problemas, também não será usado um vetor para as arenas encontradas
-  // TODO FIXME esse bgl de ArenaHeader* ta meio confuso, ele fica dentro de um objeto Arena 
-  // e deveria ter um ponteiro para o inicio da arena de fato, e nao um offset
-  ArenaHeader* actual_arena = &(arenas->m_header);
-  Chunk* actual_chunk = (Chunk*) ( (actual_arena)+(arenas->m_header.offset_first_chunk) );
-  dbg("Kernel Heap Dump\n");
-  dbg("Size\t\tAddress\t\tArena\n");
-#if 0
-  while(true) {
-    if(!(actual_chunk->exists)) {
-      actual_arena = actual_arena->m_header.next;
-      if(actual_arena != nullptr)
-        actual_chunk = (Chunk*)actual_arena + actual_arena->m_header.offset_first_chunk;
-      else
-        break;
-      continue;
-    }
-    dbg("%dB\t\t(todo ptr)\t\t(todo ptr)", actual_chunk->size);
-    Chunk* fd = actual_chunk + actual_chunk->size;
-
-
-  }
-#endif
 }

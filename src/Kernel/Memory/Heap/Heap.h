@@ -91,11 +91,7 @@ class Arena {
 
 extern unsigned long number_of_chunks;
 
-extern Arena* arenas;
-
-bool initialize();
-
-Chunk* kmalloc(u32 size);
+void* kmalloc(u32 size);
 
 //void inline append_chunk(struct Chunk* addr);
 
