@@ -131,6 +131,7 @@ sudo mkdir /mnt/k_tmp/outro_dir
 sudo chmod 777 /mnt/k_tmp
 sudo chmod 777 /mnt/k_tmp/diretorio
 sudo echo "abc" > /mnt/k_tmp/diretorio/arquivo
+sudo ls -lah /mnt/k_tmp/diretorio
 sudo rm -rf /mnt/k_tmp/lost+found 2>/dev/null
 echo "User-land:"
 ls -lah /mnt/k_tmp

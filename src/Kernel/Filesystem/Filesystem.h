@@ -96,22 +96,30 @@ class FS {
     u32 m_block_size = 4096;
 
     u32 m_first_block_group_descriptor_sector;
-    
-
 
     bool read_inode(u32 inode_number, ext2_inode* inode) {
 
       // Inicialmente, leremos apenas do primeiro grupo de blocos
       // mas para conseguirmos ler de outros grupos, basta ler sequencialmente no disco
       // cada inode tem um identificador único
-      u32 offset_within_table = (inode_number - 1) * m_inode_size;
+
+      u32 offset_within_table = (inode_number) * m_inode_size;
       u32 sector_to_read = root_inode_table_sector + (offset_within_table/512);
       u32 offset_within_sector = offset_within_table % 512;
+
+      dbg("root_inode_table_sector: %d\n", root_inode_table_sector);
+      dbg("inode_number: %d\n", inode_number);
+      dbg("sector_to_read: %d\n", sector_to_read);
+      dbg("inode: %p\n", (void*)inode);
+      dbg("offset_within_sector: %d\n", offset_within_sector);
 
       char buffer[512];
       read_from_sector(buffer, sector_to_read);
 
-      __builtin_memcpy((char*)inode, (char*) (buffer+offset_within_sector), sizeof(ext2_inode));
+      dbg("buffer->i_mode: %d\n", ((ext2_inode*)buffer+offset_within_sector)->i_mode);
+
+      __builtin_memcpy((char*)inode, (char*) (buffer+offset_within_sector), 128);
+
 
       return true;
     }
@@ -176,10 +184,11 @@ class FS {
     }
 
     void dump_dir_entry(ext2_dir_entry* dir_entry) {
-      char* buffer = (char*)dir_entry;
       u32 offset = 0;
       while(offset < m_block_size) {
-        ext2_dir_entry* entry = (ext2_dir_entry*) (buffer+offset);
+        char* buffer = (char*)dir_entry;
+        buffer+=offset;
+        ext2_dir_entry* entry = (ext2_dir_entry*) (buffer);
         if(entry->rec_len > 0) {
           Text::Write("File: ", 0xb);
           Text::Writeln((const char*)entry->name);
@@ -233,6 +242,7 @@ class FS {
             offset+=entry->rec_len;
             continue;
           }
+
           dbg("offset: %d\n", offset);
 
           if(entry->rec_len > 0) {
@@ -242,15 +252,23 @@ class FS {
 
             if(kstrcmp((const char*)entry->name, (const char*)directories_to_list[actual_dir]) == 0) {
               ++actual_dir;
-
+              ext2_dir_entry entry_backup = *entry;
+              dbg("inode number: %d\n", entry->inode);
               read_inode(entry->inode, &current_inode);
+              if(current_inode.i_mode == 0) {
+                throw_panic(0, "...");
+              }
+              // agora current_inode foi atualizado pro diretório encontrado
+              
               read_from_sector(buffer, block_to_sector(current_inode.i_block[0]));
 
               offset = 0;
 
               if(actual_dir == dirs_to_list) {
                 dbg("Diretório encontrado\n");
-                Text::Writeln("Ext2FS: Listing /diretorio", 0xb);
+                Text::Write("Ext2FS: Listing /", 0xb);
+                Text::Writeln((const char*)entry_backup.name, 0xb);
+                dbg("entry->name: %s\n", entry_backup.name);
                 dump_dir_entry((ext2_dir_entry*) buffer);
                 return;
               }
