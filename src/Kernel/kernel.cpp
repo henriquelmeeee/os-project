@@ -34,6 +34,7 @@
 
 #include "Processor.h"
 #include "HAL/HAL.h"
+alignas(4096) u64 IDT_entries[256*2];
 
 unsigned long long mem_usage = 0;
 
@@ -125,11 +126,9 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
     throw_panic(0, "Failed to initialize IDT");
   } 
 
-  /*
-    * Agora, nós precisamos configurar uma nova tabela de paginação base
-    * essa tabela vai ser genérica, principalmente para conseguirmos usar
-    * a região de memória mapeada para APIC
-  */
+  if(!(system.change_to_kernel_addr_space())) {
+    throw_panic(0, "Failed to recreate pagination for Kernel");
+  }
 
   Memory::PML4Entry entry;
   
@@ -154,9 +153,10 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
     throw_panic(0, "PD are not alligned");}
   if(reinterpret_cast<u64>(kPT) % 4096 != 0) {
     throw_panic(0, "PT are not alligned");}
-
-  // iremos mapear as 450 primeiras páginas para a mesma página física
-  // depois, usaremos o mapeamento para o endereço 0xFEE00 pois é onde está a APIC
+  
+  // Iremos mapear muita memória para o Kernel, tudo identity-mapping
+  // para que simplifiquemos a forma como o Kernel acessa a memória
+  // o que incluirá o endereço 0xFEE00, localização da APIC
  
   Memory::PDPTEntry PDPT_entry;
 
