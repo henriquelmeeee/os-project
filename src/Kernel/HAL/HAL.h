@@ -13,11 +13,12 @@
 #include "../Drivers/Keyboard.h"
 
 #define PORT (unsigned short)0x3f8 /* COM1 register, for control */
-alignas(4096) Memory::PML4Entry kPML4[512];
-alignas(4096) Memory::PDPTEntry kPDPT[512];
-alignas(4096) Memory::PDEntry kPD[512];
-alignas(4096) Memory::PTEntry kPT[512][512];
-extern u64 IDT_entries[256*2];
+
+extern u64 kPML4[512];
+extern u64 kPDPT[512];
+extern u64 kPD[512];
+extern u64 kPT[512][512];
+
 struct IDTEntry16 {
   u16 offset_low;
   u16 selector = 0x08;
@@ -27,6 +28,8 @@ struct IDTEntry16 {
   u32 offset_high;
   u32 reserved;
 } __attribute__((packed));
+
+extern IDTEntry16 IDT_entries[256];
 
 #define KERNEL_START 10485760
 
@@ -221,26 +224,26 @@ namespace HAL {
         }
 
         for(int pml4e = 0; pml4e<512; pml4e++) {
-          kPML4[pml4e] = (Memory::PML4Entry) ((reinterpret_cast<u64>(&(kPDPT[pml4e])) & ~0xFFF) | 0x3;
+          kPML4[pml4e] = ((reinterpret_cast<u64>(&(kPDPT[pml4e])) & ~0xFFF) | 0x3);
         }
 
         for(int pdpte = 0; pdpte<512; pdpte++) {
-          kPDPT[pdpte] = ((reinterpret_cast<u64>(&(kPD[pdpte])) & ~0xFFF) | 0x3;
+          kPDPT[pdpte] = ((reinterpret_cast<u64>(&(kPD[pdpte])) & ~0xFFF) | 0x3);
         }
 
         int current_page = 0;
         for(int pde = 0; pde<512; pde++) {
           for(int pte = 0; pte<512; pte++) {
-            kPT[pde][pte] = (actual_page * 4096) | 0x3;
-            actual_page++;
+            kPT[pde][pte] = (current_page * 4096) | 0x3;
+            current_page++;
           }
-          kPD[pde] = ((reinterpret_cast<u64>(&(kPT[pde])) & ~0xFFF) | 0x3;
+          kPD[pde] = ((reinterpret_cast<u64>(&(kPT[pde])) & ~0xFFF) | 0x3);
         }
         
-        ASSERT(kPT[0][0].flag_bits.present == 1,   -ENOPT,    "Failed to create PT");
-        ASSERT(kPD[0].flag_bits.present    == 1,   -ENOPD,    "Failed to create PD");
-        ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT,  "Failed to create PDPT");
-        ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4,  "Failed to create PML4");
+        //ASSERT(kPT[0][0].flag_bits.present == 1,   -ENOPT,    "Failed to create PT");
+        //ASSERT(kPD[0].flag_bits.present    == 1,   -ENOPD,    "Failed to create PD");
+        //ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT,  "Failed to create PDPT");
+        //ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4,  "Failed to create PML4");
 
 
         __asm__ volatile(
@@ -250,7 +253,6 @@ namespace HAL {
             : "rax", "memory"
 
           );
-
         return true;
       }
 
@@ -262,17 +264,17 @@ namespace HAL {
 
         dbg("append_idt addr: %p offset: %d", (void*)addr, offset);
 
-        u64 low_bits = ((u64)0x08 << 16); // seletor
-        low_bits |= (addr & 0xFFFF);
-        low_bits |= ((u64)0x8E << 40); // flags
+        IDTEntry16 *entry = &(IDT_entries[offset]);
 
-        u64 high_bits = ((addr >> 16) & 0xFFFF);
-        high_bits |= ((addr>>32) & 0xFFFFFFFFULL) << 32;
+        entry->offset_low = addr & 0xFFFF;
+        entry->offset_middle = (addr >> 16) & 0xFFFF;
+        entry->offset_high = (addr >> 32) & 0xFFFFFFFF;
 
+        entry->selector = 0x08;
+        entry->flags = 0x8E;
 
-        u64* idt_entry = &IDT_entries[offset * 2];
-        *idt_entry = low_bits;
-        *(idt_entry + 1) = high_bits;
+        entry->ist = 0;
+
 #if 0
         u32 idx = offset * 2;
         IDT_entries[idx] = low_bits;

@@ -78,7 +78,7 @@ SECTORS_PREKERNEL=$(($SECTORS_PREKERNEL / 512))
 if [ $(($SECTORS_PREKERNEL * 512)) -lt $(stat -c%s "bin/prekernel.bin") ]; then
     SECTORS_PREKERNEL=$(($SECTORS_PREKERNEL + 1))
 fi
-
+echo $SECTORS_KERNEL
 sed -i "s/SECTORS_PREKERNEL/$SECTORS_PREKERNEL/g" bootloader.asm
 SECTORS=$(stat -c%s "bin/kernel.bin")
 SECTORS=$(($SECTORS / 512))

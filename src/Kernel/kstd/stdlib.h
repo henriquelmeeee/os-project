@@ -82,6 +82,21 @@ class PhysicalRegion {
     }
 };*/
 extern Vector<Region*> physical_pages_in_use;
+
 }
+
+namespace Spinlock {
+  volatile bool is_available = true;
+
+  void lock() {
+    while(__sync_lock_test_and_set(&is_available, false)) {asm volatile ("pause");}
+    return;
+  }
+
+  void unlock() {
+    __sync_lock_release(&is_available);
+    return;
+  }
+};
 
 

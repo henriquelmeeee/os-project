@@ -69,9 +69,9 @@ namespace Keyboard {
    *    corretamente.
   */    
 
-  void/* NO_CALLER_SAVED_REGISTERS*/ keyboard_interrupt_key(KeyboardInterrupt s) {
-    CLI;
-    dbg("a");
+  void/* NO_CALLER_SAVED_REGISTERS*/ __attribute__((interrupt)) keyboard_interrupt_key(KeyboardInterrupt *s) {
+    dbg("Oi eu to aqui");
+    __asm__ volatile("cli");
     __asm__ volatile("hlt");
 
 #if 0

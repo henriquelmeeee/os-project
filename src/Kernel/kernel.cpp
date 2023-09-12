@@ -5,9 +5,6 @@
  * 3->4GB         -> Static Data related (userspace)
 */
 
-// FIXME se eu ler um setor aleatorio agora tipo o setor 2, na hora de ler o setor 200
-// ele vai pegar um valor meio q aleatorio parece ser algo relacionado ao cache sla
-
 #define KERNEL_SIZE 26112
 // Drivers:
 //#include "Drivers/Keyboard.h"
@@ -34,7 +31,7 @@
 
 #include "Processor.h"
 #include "HAL/HAL.h"
-alignas(4096) u64 IDT_entries[256*2];
+alignas(4096) IDTEntry16 IDT_entries[256];
 
 unsigned long long mem_usage = 0;
 
@@ -69,10 +66,17 @@ void disable_irq(int irq) {
 
 #define fo (char)15
 
+#if 0
 alignas(4096) Memory::PML4Entry kPML4[512];
 alignas(4096) Memory::PDPTEntry kPDPT[512];
 alignas(4096) Memory::PDEntry kPD[512];
 alignas(4096) Memory::PTEntry kPT[512][512];
+#endif
+
+alignas(4096) u64 kPML4[512];
+alignas(4096) u64 kPDPT[512];
+alignas(4096) u64 kPD[512];
+alignas(4096) u64 kPT[512][512];
 
 //Memory::PhysicalRegion physical_stack;
 //Memory::PhysicalRegion physical_heap;
@@ -108,16 +112,13 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   if(!(system.init_serial_for_dbg()))
       Text::Writeln("Warning: cannot initialize serial for debugging", 0x4);
 
-  system.init_idt();
-  system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 33);
-  system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 13);
-  STI;
-  halt();
-  while(true);
-  pages_in_use = (unsigned long*)kmalloc(PAGE_SIZE);
-  if(pages_in_use == nullptr) {
-    throw_panic(0, "kmalloc() returned nullptr");
-  }
+  //system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 33);
+  //system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 13);
+  //STI;
+  //pages_in_use = (unsigned long*)kmalloc(PAGE_SIZE);
+  //if(pages_in_use == nullptr) {
+    //throw_panic(0, "kmalloc() returned nullptr");
+  //}
 
   dbg("kmain()-> Kernel iniciando\n");
   char* txtaddr = (char*) 0xB8000;
@@ -129,6 +130,8 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   if(!(system.change_to_kernel_addr_space())) {
     throw_panic(0, "Failed to recreate pagination for Kernel");
   }
+
+#if 0
 
   Memory::PML4Entry entry;
   
@@ -145,14 +148,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
     kPML4[pml4e] = entry;
   }
 
-  if(reinterpret_cast<u64>(kPDPT) % 4096 != 0){
-    throw_panic(0, "PDPT are not alligned");}
-  if(reinterpret_cast<u64>(kPML4) % 4096 != 0) {
-    throw_panic(0, "PML4 are not alligned");}
-  if(reinterpret_cast<u64>(kPD) % 4096 != 0) {
-    throw_panic(0, "PD are not alligned");}
-  if(reinterpret_cast<u64>(kPT) % 4096 != 0) {
-    throw_panic(0, "PT are not alligned");}
+
   
   // Iremos mapear muita memória para o Kernel, tudo identity-mapping
   // para que simplifiquemos a forma como o Kernel acessa a memória
@@ -201,10 +197,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   // o resto da memória só será configurada na hora de inicializar tabela para processos
 */
   
-  ASSERT(kPT[0][0].flag_bits.present == 1,   -ENOPT,    "Failed to create PT");
-  ASSERT(kPD[0].flag_bits.present    == 1,   -ENOPD,    "Failed to create PD");
-  ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT,  "Failed to create PDPT");
-  ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4,  "Failed to create PML4");
+
 
   dbg("kmain()-> Recriando tabela de paginação\n");
   __asm__ volatile( 
@@ -216,7 +209,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
       : "r" (kPML4)
       :"rax","memory"
       );
-
+#endif
   Text::Writeln("Pagination for kernel enabled, initializing devices...", 9);
 
   dbg("kmain()-> Tabela de paginação recriada com sucesso\n");
@@ -226,27 +219,18 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   //physical_heap         = kmmap();
   //physical_data         = kmmap();
 
-
-  
-  //TRY(Initialize::SecondStage::init(), ErrorType{CRITICAL}, "SecondStage init failed");
-  //TRY(Process::init(), ErrorType{CRITICAL}, "Tasks initialization failed");
-  
   //Binary* shell_buffer = FS::LoadBinary("Shell");
   //dbg("shell carregado (512 bytes)\n"); 
   //FS filesystem = FS();
   //filesystem.open("/teste");
   Text::NewLine();
-  dump_kernel_heap();
-  halt();
   Text::NewLine();
   Text::Writeln("Kernel: Shell will be spawned", 2);
-  while(true);
 
   Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
   //CreateKernelProcess((void*)KernelTask::Watchdog);
-  system.append_idt((unsigned long)KernelTask::Watchdog, 32);
-
-  outb(0x20, 0x11);
+#if 0  
+outb(0x20, 0x11);
 outb(0xA0, 0x11);
 outb(0x21, 0x20);
 outb(0xA1, 0x28);
@@ -264,8 +248,10 @@ outb(0xA1, 0x0);
 
   outb(0x40, low);
   outb(0x40, high);
- 
+#endif
   system.DoAutomatedTests();
+  system.append_idt((u64) Drivers::Keyboard::keyboard_interrupt_key, 32);
+  STI;
   while(true);
 
   
