@@ -288,6 +288,54 @@ class FS {
     void* open(const char* path) {return nullptr;}
 };
 
+// Quando um processo quiser commitar as alterações
+// do arquivo no disco, ele usará a syscall write()
+// juntamente com o FD
+// isso atualizará todos blocos apontados pelo inode
+// para o novo conteúdo
+
+class File {
+  private:
+    Region* m_file_addr = nullptr;
+    Process* m_proc;
+    Filesystem* m_fs;
+
+    void* m_inode;
+
+    u16 m_fd;
+    char* m_absolute_path;
+
+  public:
+    File(const char* absolute_path, u16 fd, Process* proc, Filesystem* fs) {
+      if(absolute_path == nullptr || proc == nullptr) {
+        throw_panic(0, "Invalid file");
+      }
+
+      if(fs == nullptr) {
+        throw_panic(0, "Invalid filesystem");
+      }
+
+      m_absolute_path = absolute_path;
+      m_proc = proc;
+      m_fs = fs;
+
+      m_inode = (void*)m_fd->get_inode(m_absolute_path);
+      m_file_addr = m_fd->read(m_inode);
+      
+    }
+
+    ~File() {
+      kfree((void*)m_absolute_path);
+      // TODO for_each_vmobject of m_file_addr
+    }
+
+    bool commit() {
+      if(!(m_fd->write(m_inode, m_file_adr))) {
+        return false;  
+      }
+    }
+};
+
 // OLD custom filesystem
 #if 0
 struct Binary {
