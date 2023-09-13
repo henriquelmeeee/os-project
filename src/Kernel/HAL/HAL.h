@@ -348,9 +348,11 @@ namespace HAL {
 
         // Desmascarando interrupção do teclado e timer apenas
       
-        outb(PIC1_DATA, 0xFD); // desmascara teclado
-        outb(PIC2_DATA, 0xFF); // mascara tudo da PIC2
+        //outb(PIC1_DATA, 0xFD); // desmascara teclado
+        //outb(PIC2_DATA, 0xFF); // mascara tudo da PIC2
         
+        outb(PIC1_DATA, 0x00); // desmascara tudo
+        outb(PIC2_DATA, 0xFF);
 
         return true;
       }

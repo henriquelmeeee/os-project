@@ -10,6 +10,68 @@
 #include "../Memory/Heap/Heap.h"
 #include "../Drivers/VIDEO/preload.h"
 
+struct TSS64 {
+  u32 reserved0;
+  u64 rsp0;
+  u64 rsp1;
+  u64 rsp2;
+  u64 reserved1;
+  u64 ist1;
+  u64 ist2;
+  u64 ist3;
+  u64 ist4;
+  u64 ist5;
+  u64 ist6;
+  u64 ist7;
+  u64 reserved2;
+  u16 reserved3;
+  u16 iomap_base;
+} __attribute__((packed));
+
+struct Registers {
+  u64 rax;
+  u64 rdi;
+  u64 rsi;
+  u64 rdx;
+  u64 rbx;
+  u64 rcx;
+
+  u64 rsp;
+  u64 rbp;
+  
+  u64 r8;
+  u64 r9;
+  u64 r10;
+  u64 r11;
+  u64 r12;
+  u64 r13;
+  u64 r14;
+  u64 r15;
+
+  u64 rip;
+  
+  u32 cs;
+  u32 ds;
+  u32 es;
+  u32 fs;
+  u32 gs;
+  u32 ss;
+  
+  u64 rflags;
+  
+  u64 cr0;
+  u64 cr2;
+  u64 cr3;
+  u64 cr4;
+  
+  u64 dr0;
+  u64 dr1;
+  u64 dr2;
+  u64 dr3;
+  u64 dr6;
+  u64 dr7;
+};
+
 class Process {
   private:
   public:
@@ -20,10 +82,33 @@ class Process {
 
     bool m_kernel_process;
 
+    TSS64 m_tss = {0};
+    Registers m_regs = {0};
+
     u128 m_cycles_started;
     u128 m_cycles_finished;
 
     Memory::Vector<Region> m_regions;
+
+    void kernel_constructor() {
+      m_regs.rsp = ((u64) kmalloc(1024)) + 1024;
+      m_regs.rbp = m_regs.rsp;
+      u64 cr0, cr2, cr3, cr4;
+      asm volatile("mov %%cr0, %0" : "=r"(cr0));
+      asm volatile("mov %%cr2, %0" : "=r"(cr2));
+      asm volatile("mov %%cr3, %0" : "=r"(cr3));
+      asm volatile("mov %%cr4, %0" : "=r"(cr4));
+      m_regs.cr0 = cr0;
+      m_regs.cr2 = cr2;
+      m_regs.cr3 = cr3;
+      m_regs.cr4 = cr4;
+      return;
+    }
+
+    void kernel_routine_set(void* addr) {
+      m_regs.rip = (u64) addr;
+      return;
+    }
 
     Process(char* name, bool kernel_process = false) : m_name(name) {
       dbg("Processo %s criado", m_name);
@@ -31,10 +116,14 @@ class Process {
       // Inicialmente, precisamos criar as regiões para o código e a stack
       // Essas regiões conterão uma lista de VMObjects
       // e o mapeamento para a memória física ocorrerá de forma transparente
-      // A página virtual 100 do processo é onde a região de código começo
-      // Já a página virtual 200 (~819MB) é onde a stack começa, em direção ao código
+      // A página virtual 500 do processo é onde a região de código começa
+      // Já a página virtual 600 é onde a stack começa, em direção ao código
       // esse é um layout temporário.
-
+      
+      if(kernel_process) {
+        kernel_constructor();
+        return;
+      }
       Region code_region      = Region(this);
       Region stack_region     = Region(this);
 
@@ -45,25 +134,52 @@ class Process {
 
       short raw_data_test[] = {0x90, 0x90, 0x90, 0x90};
       VMObject* current_code_page = (VMObject*) kmalloc(sizeof(VMObject)); // TODO operador new()
-      current_code_page->m_virtual_page = 100;
-      current_code_page->m_physical_page = 400;
+      current_code_page->m_virtual_page = 500;
+      current_code_page->m_physical_page = 600;
       // TODO memset() para a m_physical_page baseado em raw_data_test
       if(!current_code_page->map(this)) {
         throw_panic(0, "current_code_page->map(this) falhou");
       }
 
       m_regions.append(code_region);
-      code_region.map_all(100);
 
       m_regions.append(stack_region);
-      stack_region.map_all(200);
       m_kernel_process = kernel_process;
 
-      dbg("tudo mapeado");
+#if 0
+      // Agora, precisamos configurar o TSS: (ainda não é usada)
+
+      TSS64* rsp0_chunk      = (TSS64*) kmalloc(512);
+      //TSS64* rsp1_chunk      = (TSS64*) kmalloc(512);
+      TSS64* rsp2_chunk      = (TSS64*) kmalloc(512);
+
+      TSS64* ist1_chunk      = (TSS64*) kmalloc(512);
+      TSS64* ist2_chunk      = (TSS64*) kmalloc(512);
+      TSS64* ist3_chunk      = (TSS64*) kmalloc(512);
+      TSS64* ist4_chunk      = (TSS64*) kmalloc(512);
+      TSS64* ist5_chunk      = (TSS64*) kmalloc(512);
+      TSS64* ist6_chunk      = (TSS64*) kmalloc(512);
+      TSS64* ist7_chunk      = (TSS64*) kmalloc(512);
+
+      // TODO salvar ponteiros para esses ist_chunk e rsp_chunk para kfree()
+
+
+      m_tss.rsp0             = ((u64) (rsp0_chunk));
+      //m_tss.rsp1             = ((u64) (rsp1_chunk)) + 512;
+      m_tss.rsp2             = ((u64) (rsp2_chunk)) + 512;
+
+      m_tss.ist1             = ((u64) (ist1_chunk)) + 512;
+      m_tss.ist2             = ((u64) (ist2_chunk)) + 512;
+      m_tss.ist3             = ((u64) (ist3_chunk)) + 512;
+      m_tss.ist4             = ((u64) (ist4_chunk)) + 512;
+      m_tss.ist5             = ((u64) (ist5_chunk)) + 512;
+      m_tss.ist6             = ((u64) (ist6_chunk)) + 512;
+      m_tss.ist7             = ((u64) (ist7_chunk)) + 512;
+#endif
     }
 };
 
-extern Memory::Vector<Process> m_procs;
+extern Memory::Vector<Process> g_procs;
 
 #if 0
   enum state {
@@ -113,52 +229,6 @@ namespace Process {
 }
 // Every page has 2MB size
 #endif
-
-struct Registers {
-  // General Purpose Registers
-  unsigned long long rax;
-  unsigned long long rbx;
-  unsigned long long rcx;
-  unsigned long long rdx;
-  unsigned long long rsi;
-  unsigned long long rdi;
-  unsigned long long rbp;
-  unsigned long long rsp;
-  unsigned long long r8;
-  unsigned long long r9;
-  unsigned long long r10;
-  unsigned long long r11;
-  unsigned long long r12;
-  unsigned long long r13;
-  unsigned long long r14;
-  unsigned long long r15;
-  
-  // Segment Registers
-  unsigned short cs;
-  unsigned short ds;
-  unsigned short es;
-  unsigned short fs;
-  unsigned short gs;
-  unsigned short ss;
-  
-  // Pointer and Index Registers
-  unsigned long long rip;
-  unsigned long long rflags;
-  
-  // Control Registers
-  unsigned long long cr0;
-  unsigned long long cr2;
-  unsigned long long cr3;
-  unsigned long long cr4;
-  
-  // Debug Registers
-  unsigned long long dr0;
-  unsigned long long dr1;
-  unsigned long long dr2;
-  unsigned long long dr3;
-  unsigned long long dr6;
-  unsigned long long dr7;
-};
 
 struct TimerStack {
   unsigned long long rip, cs, rflags, rsp, ss;

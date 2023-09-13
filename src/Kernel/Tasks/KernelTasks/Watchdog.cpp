@@ -3,7 +3,9 @@
 
 namespace KernelTask {
   void Watchdog() {
-    Text::Writeln("Kernel: Watchdog task running");
-    while(true);
+label:
+    for(int i = 0; i<99999999; i++);
+    kprintf("Kernel: Watchdog task running");
+    goto label;
   }
 }

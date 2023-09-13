@@ -82,6 +82,11 @@ alignas(4096) u64 kPT[512][512];
 //Memory::PhysicalRegion physical_heap;
 //Memory::PhysicalRegion physical_data;
 
+void kernel_process_test() {
+  dbg("kernel process!");
+  while(true);
+}
+
 HAL::System system = HAL::System();
 
 extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point kernel
@@ -233,7 +238,11 @@ outb(0xA1, 0x0);
 
   system.append_idt((u64) Drivers::Keyboard::keyboard_interrupt_key, 32);
 
-  Process proc = Process("teste");
+  Process proc = Process("teste", true);
+  proc.kernel_routine_set((void*)KernelTask::Watchdog);
+  
+  u64 rip = (u64) proc.m_regs.rip;
+  asm volatile("jmp *%0" : : "r" (rip));
 
   STI;
   while(true);

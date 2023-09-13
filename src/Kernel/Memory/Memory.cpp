@@ -2,7 +2,7 @@
 #include "Memory.h"
 
 bool VMObject::map(Process* process) {
-    if(m_physical_page < KERNEL_END)
+    if((m_physical_page * 4096) < KERNEL_END)
         return false;
       u64 v_page = m_virtual_page;
       u16 pml4_index = (v_page >> 39) & 0x1FF;
