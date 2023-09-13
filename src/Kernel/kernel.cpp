@@ -232,6 +232,9 @@ outb(0xA1, 0x0);
   system.DoAutomatedTests();
 
   system.append_idt((u64) Drivers::Keyboard::keyboard_interrupt_key, 32);
+
+  Process proc = Process("teste");
+
   STI;
   while(true);
 

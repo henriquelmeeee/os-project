@@ -18,13 +18,52 @@ class Process {
 
     char* m_name;
 
-    Memory::Vector<Region*> m_regions;
+    bool m_kernel_process;
 
-    Process(char* name) : m_name(name) {
+    u128 m_cycles_started;
+    u128 m_cycles_finished;
+
+    Memory::Vector<Region> m_regions;
+
+    Process(char* name, bool kernel_process = false) : m_name(name) {
       dbg("Processo %s criado", m_name);
+      
+      // Inicialmente, precisamos criar as regiões para o código e a stack
+      // Essas regiões conterão uma lista de VMObjects
+      // e o mapeamento para a memória física ocorrerá de forma transparente
+      // A página virtual 100 do processo é onde a região de código começo
+      // Já a página virtual 200 (~819MB) é onde a stack começa, em direção ao código
+      // esse é um layout temporário.
+
+      Region code_region      = Region(this);
+      Region stack_region     = Region(this);
+
+      // TODO precisamos carregar o binário do filesystem
+      // e pegar tudo dele e colocar em diferentes páginas VMObject
+      
+      // temporariamente hard-coded
+
+      short raw_data_test[] = {0x90, 0x90, 0x90, 0x90};
+      VMObject* current_code_page = (VMObject*) kmalloc(sizeof(VMObject)); // TODO operador new()
+      current_code_page->m_virtual_page = 100;
+      current_code_page->m_physical_page = 400;
+      // TODO memset() para a m_physical_page baseado em raw_data_test
+      if(!current_code_page->map(this)) {
+        throw_panic(0, "current_code_page->map(this) falhou");
+      }
+
+      m_regions.append(code_region);
+      code_region.map_all(100);
+
+      m_regions.append(stack_region);
+      stack_region.map_all(200);
+      m_kernel_process = kernel_process;
+
+      dbg("tudo mapeado");
     }
 };
 
+extern Memory::Vector<Process> m_procs;
 
 #if 0
   enum state {

@@ -25,13 +25,14 @@ class VMObject {
   // Se m_physical_page == 0, então o VMObject ainda não foi alocado
   // não é recomendável criar um VMObject sem um m_physical_page, porque ele ainda estará no vetor 
   // de páginas físicas que as syscalls usarão para procurar por páginas físicas disponíveis
-  private:
+ // private:
+  public:
     u64 m_virtual_page;
     u64 m_physical_page;
     u64* m_pt_location = nullptr;
     PagePermissions m_permissions;
 
-  public:
+  //public:
     VMObject(u64 virtual_page, u64 physical_page = 0) : m_virtual_page(virtual_page) {
       dbg("Kernel: Novo VMOBject criado\nA página virtual é %d\n", (int)virtual_page);
       // TODO talvez setar as permissões logo aqui
@@ -68,7 +69,7 @@ class Region {
     Process* m_process;
     u32 m_size;
   public:
-    Region() {
+    Region(Process* process) : m_process(process) {
       dbg("Nova região criada\n");
     }
 
@@ -84,6 +85,10 @@ class Region {
 
       dbg("Alocado novo VMObject para Region\n");
 
+      return true;
+    }
+
+    bool map_all(u32 virtual_page_start) {
       return true;
     }
 };
