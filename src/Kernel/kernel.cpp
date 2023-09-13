@@ -89,6 +89,8 @@ void kernel_process_test() {
 
 HAL::System system = HAL::System();
 
+#include "Interruptions/ContextSwitch.h"
+
 extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point kernel
   u64* rbp;
   __asm__ volatile("mov %%rbp, %0" : "=r" (rbp));
@@ -98,6 +100,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
 
   Text::text_clear();
+  throw_panic(0, "Test");
   kprintf("Loading kernel", 9);
   // TODO check if BootloaderInfo is corrupted
   
@@ -214,17 +217,12 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   //physical_data         = kmmap();
 
   //CreateKernelProcess((void*)KernelTask::Watchdog);
-#if 0  
-outb(0x20, 0x11);
-outb(0xA0, 0x11);
-outb(0x21, 0x20);
-outb(0xA1, 0x28);
-outb(0x21, 0x04);
-outb(0xA1, 0x02);
+//outb(0x21, 0x20);
+//outb(0xA1, 0x28);
+//outb(0x21, 0x04);
+//outb(0xA1, 0x02);
 outb(0x21, 0x01);
 outb(0xA1, 0x01);
-outb(0x21, 0x0);
-outb(0xA1, 0x0);
 
   u32 divisor = 1193180 / 50;
   outb(0x43, 0x36);
@@ -233,16 +231,15 @@ outb(0xA1, 0x0);
 
   outb(0x40, low);
   outb(0x40, high);
-#endif
   system.DoAutomatedTests();
 
-  system.append_idt((u64) Drivers::Keyboard::keyboard_interrupt_key, 32);
+  system.append_idt((u64) quantum_interruption_handle, 32);
 
-  Process proc = Process("teste", true);
-  proc.kernel_routine_set((void*)KernelTask::Watchdog);
+  //Process proc = Process("teste", true);
+  //proc.kernel_routine_set((void*)KernelTask::Watchdog);
   
-  u64 rip = (u64) proc.m_regs.rip;
-  asm volatile("jmp *%0" : : "r" (rip));
+  //u64 rip = (u64) proc.m_regs.rip;
+  //asm volatile("jmp *%0" : : "r" (rip));
 
   STI;
   while(true);

@@ -30,21 +30,19 @@ outw(0x3D4, 0xE715); // Start Address Low
 outw(0x3D4, 0x0616); // Location of the Cursor Start
 outw(0x3D4, 0xE317); // Text-Mode Blinking
 #endif
-  Text::NewLine();
-  dbg("Kernel panic was released\nError message is %s\n", msg);
-  dbg("kmain() pointer: %p\n", (void*)kmain);
-  write(("Kernel panic!"));
-  system.dump_stack();
+  newline;
+  dbg("Kernel panic was released\nError message is: '%s'\n", msg);
+  write("Fatal: Kernel panic!", 0x4);
+  newline;
   write(msg);
-  newline;
-  newline;
+  system.dump_stack();
   //itos(Process::amount_of_procs, buffer);
-  write(buffer);
-  write(" tasks");
-  newline;
-  itos(number_of_chunks, buffer);
-  write(buffer); write(" kernel chunks"); newline;
-  itoh(rip, buffer); write(("0x"), 0x4); write(buffer, 0x4); write((" - RIP"), 0x4); newline;
+  //write(buffer);
+  //write(" tasks");
+  //newline;
+  dbg("%d kernel chunks", number_of_chunks);
+  write("RIP: ");
+  itoh(rip, buffer); write(("0x")); write(buffer); newline;
   dbg("Tasks dump:\n");
   //for(unsigned int i = 0; i<Process::amount_of_procs; i++) {
     //dbg(Process::procs[i].name);
@@ -67,6 +65,7 @@ outw(0x3D4, 0xE317); // Text-Mode Blinking
     write!(Utils::itos(Process::procs[i]->pid));
   }
   */
+#if 0
   newline;
   if(mem_usage < 1024) {
     itos(mem_usage, buffer);
@@ -81,7 +80,8 @@ outw(0x3D4, 0xE317); // Text-Mode Blinking
     write(buffer);
     write("MB RAM usage");
   }
+#endif
   newline;
-  write("System halted", 15);
+  write("System halted.", 15);
   hlt;
 }

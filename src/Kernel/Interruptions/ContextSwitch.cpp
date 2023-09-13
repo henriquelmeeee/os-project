@@ -2,14 +2,11 @@
 #include "../Utils/Base.h"
 #include "../Memory/Base_Mem.h"
 
-struct TimerInterrupt {
-
-};
-
-using namespace Process;
-
-void __attribute__((interrupt)) quantum_interruption_handle(TimerInterrupt *s) {
+void __attribute__((interrupt)) quantum_interruption_handle(void*) {
   CLI;
+  dbg("interrupcao de timer!");
+  asm volatile("hlt");
+#if 0
   __asm__ volatile("hlt");
   // TODO semáforo para garantir q não haverá condição de corrida
   // pq se houver, o proximo processo da lista escolhido pode ser um que na mesma hora seja escolhido pelo 
@@ -43,6 +40,6 @@ void __attribute__((interrupt)) quantum_interruption_handle(TimerInterrupt *s) {
       :
       :
       );*/
-  
+#endif
 
 }
