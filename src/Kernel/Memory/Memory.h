@@ -6,8 +6,8 @@
 #include "Base_Mem.h"
 #include "../Utils/Base.h"
 class Process;
-
 class Region;
+
 #define KERNEL_END 1000000
 
 #define PG_PRESENT 0x1

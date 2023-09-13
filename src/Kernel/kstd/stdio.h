@@ -266,12 +266,13 @@ inline void dbg(const char *format, ...) {
         format++;
     }
     buffer[buffer_index] = '\0';
-
     for (int i = 0; buffer[i] != '\0'; ++i) {
-        outb(0x3F8, buffer[i]);
+      outb(0x3F8, buffer[i]);
     }
     outb(0x3F8, '\n');
     va_end(args);
 }
+
+#define kprintf Text::Writeln
 
 #endif

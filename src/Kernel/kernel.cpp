@@ -90,8 +90,10 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   dbg("RBP for kmain(): %p\n", rbp);
   dbg("*RBP for kmain(): %p\n", (void*)*rbp);
   dbg("*(RBP+8) for kmain(): %p, kentrypoint() address: %p\n", (void*)(*(rbp+1)), (void*)kentrypoint);
+
+
   Text::text_clear();
-  Text::Writeln("Loading kernel", 9);
+  kprintf("Loading kernel", 9);
   // TODO check if BootloaderInfo is corrupted
   
   if(info == 0) {
@@ -100,27 +102,18 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   //FIXME info->boot_type is not working idk
 
-  if(info->boot_type == BIOS) {
-    Text::Writeln("BIOS boot detected", 9);
-  } else {
-    Text::Writeln("UEFI boot detected", 9);
-  }
+  if(info->boot_type == BIOS)
+    kprintf("BIOS boot detected", 9);
+  else 
+    kprintf("UEFI boot detected", 9);
 
   system = HAL::System();
   mem_usage+=KERNEL_SIZE;
 
   if(!(system.init_serial_for_dbg()))
-      Text::Writeln("Warning: cannot initialize serial for debugging", 0x4);
+      kprintf("Warning: cannot initialize serial for debugging", 0x4);
 
-  //system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 33);
-  //system.append_idt((u64)Drivers::Keyboard::keyboard_interrupt_key, 13);
-  //STI;
-  //pages_in_use = (unsigned long*)kmalloc(PAGE_SIZE);
-  //if(pages_in_use == nullptr) {
-    //throw_panic(0, "kmalloc() returned nullptr");
-  //}
-
-  dbg("kmain()-> Kernel iniciando\n");
+  dbg("kmain()-> Kernel iniciando");
   char* txtaddr = (char*) 0xB8000;
 
   if(!(system.init_idt())) {
@@ -210,24 +203,11 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
       :"rax","memory"
       );
 #endif
-  Text::Writeln("Pagination for kernel enabled, initializing devices...", 9);
-
-  dbg("kmain()-> Tabela de paginação recriada com sucesso\n");
-  dbg("kmain()-> Criando regiões para stack, heap e data\n");
 
   //physical_stack        = kmmap();
   //physical_heap         = kmmap();
   //physical_data         = kmmap();
 
-  //Binary* shell_buffer = FS::LoadBinary("Shell");
-  //dbg("shell carregado (512 bytes)\n"); 
-  //FS filesystem = FS();
-  //filesystem.open("/teste");
-  Text::NewLine();
-  Text::NewLine();
-  Text::Writeln("Kernel: Shell will be spawned", 2);
-
-  Text::Writeln("Kernel: Starting processes by Watchdog Kernel Task", 9);
   //CreateKernelProcess((void*)KernelTask::Watchdog);
 #if 0  
 outb(0x20, 0x11);
@@ -250,6 +230,7 @@ outb(0xA1, 0x0);
   outb(0x40, high);
 #endif
   system.DoAutomatedTests();
+
   system.append_idt((u64) Drivers::Keyboard::keyboard_interrupt_key, 32);
   STI;
   while(true);

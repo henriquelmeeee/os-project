@@ -4,7 +4,7 @@
 #define FS_H
 
 #include "../Utils/Base.h"
-#include "../Memory/Base_Mem.h"
+#include "../Memory/Memory.h"
 #include "../Drivers/Disk.h"
 #include "../Drivers/VIDEO/preload.h"
 
@@ -97,7 +97,7 @@ class FS {
 
     u32 m_first_block_group_descriptor_sector;
 
-    bool read_inode(u32 inode_number, ext2_inode* inode) {
+    bool __read_inode(u32 inode_number, ext2_inode* inode) {
 
       // Inicialmente, leremos apenas do primeiro grupo de blocos
       // mas para conseguirmos ler de outros grupos, basta ler sequencialmente no disco
@@ -254,7 +254,7 @@ class FS {
               ++actual_dir;
               ext2_dir_entry entry_backup = *entry;
               dbg("inode number: %d\n", entry->inode);
-              read_inode(entry->inode, &current_inode);
+              __read_inode(entry->inode, &current_inode);
               if(current_inode.i_mode == 0) {
                 throw_panic(0, "...");
               }
@@ -298,15 +298,15 @@ class File {
   private:
     Region* m_file_addr = nullptr;
     Process* m_proc;
-    Filesystem* m_fs;
+    FS* m_fs;
 
     void* m_inode;
 
     u16 m_fd;
-    char* m_absolute_path;
+    const char* m_absolute_path;
 
   public:
-    File(const char* absolute_path, u16 fd, Process* proc, Filesystem* fs) {
+    File(const char* absolute_path, u16 fd, Process* proc, FS* fs) {
       if(absolute_path == nullptr || proc == nullptr) {
         throw_panic(0, "Invalid file");
       }
@@ -319,8 +319,8 @@ class File {
       m_proc = proc;
       m_fs = fs;
 
-      m_inode = (void*)m_fd->get_inode(m_absolute_path);
-      m_file_addr = m_fd->read(m_inode);
+      //m_inode = (void*)m_fs->get_inode(m_absolute_path);
+      //m_file_addr = m_fs->read(m_inode);
       
     }
 
@@ -330,9 +330,11 @@ class File {
     }
 
     bool commit() {
-      if(!(m_fd->write(m_inode, m_file_adr))) {
-        return false;  
-      }
+      throw_panic(0, "File::commit() not implemented yet");
+      return false;
+      //if(!(m_fd->write(m_inode, m_file_adr))) {
+        //return false;  
+      //}
     }
 };
 
