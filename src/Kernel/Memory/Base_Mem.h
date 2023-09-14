@@ -127,24 +127,16 @@ class Vector {
     }
 
     V& operator[](u32 index) {
-      if(index >= this->capacity-1) {
-        //dbg("Vector::operator[]-> fora da capacidade (index=");
-        //itos(index, this->buf);
-        //dbg(buf);
-        //dbg(")\n");
-        do {
-          V* new_chunk = (V*) kmalloc((capacity+32)*sizeof(V));
-          for(int i = 0; i<this->capacity; i++) {
-            //Utils::kmemcpy(new_chunk[i], this->chunk[i], sizeof(V));
-          }
-          //kfree(this->chunk);
-          this->chunk = new_chunk;
-          this->capacity += 32;
-        } while(index>=this->capacity);
+      while(index >= this->capacity) {
+        V* new_chunk = (V*) kmalloc((capacity + 32) * sizeof(V));
+        for(int i = 0; i < this->capacity; i++)
+          new_chunk[i] = this->chunk[i];
+
+        //kfree(this->chunk);
+        this->chunk = new_chunk;
+        this->capacity += 32;
       }
-      //if(index>last_element_index) {
-        //last_element_index = index+1;
-      //}
+
       return this->chunk[index];
     };
 

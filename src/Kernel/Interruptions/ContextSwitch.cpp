@@ -16,7 +16,6 @@ void __attribute__((interrupt)) quantum_interruption_handle(InterruptFrame *args
   u64 __saved_rip = args->rip;
   u64 __saved_rsp = args->rsp;
   u64 __saved_rbp;
-#if 0
   u64* __rbp = nullptr;
 
   __asm__ volatile(
@@ -26,13 +25,21 @@ void __attribute__((interrupt)) quantum_interruption_handle(InterruptFrame *args
       : "memory"
     );
   __saved_rbp = *__rbp;
-#endif
-  Process* next_proc = &(g_kernel_procs[0]);
 
+  if(g_current_proc != nullptr) {
+    g_current_proc->m_regs.rip = __saved_rip;
+    g_current_proc->m_regs.rsp = __saved_rsp;
+    g_current_proc->m_regs.rbp = __saved_rbp;
+  }
 
+  Process* next_proc = g_kernel_procs[0];
+  if(next_proc->m_regs.rip == 0) {
+    throw_panic(0, "m_regs.rip invalido"); // TODO mensagem bonita de erro 
+  }
+  g_current_proc = next_proc;
+  dbg("NEXT_PROC->m_regs.rip = %p", (void*)(next_proc->m_regs.rip));
   u64 rax, rbx, rcx, rdx, rdi, rsi, rbp, r8, r9, r10, r11, r12, r13, r14, r15;
   u64 rip;
-  dbg("NEXT_PROC->m_regs.rip = %p", (void*)(next_proc->m_regs.rip));
   rax = next_proc->m_regs.rax;
   rbx = next_proc->m_regs.rbx;
   rcx = next_proc->m_regs.rcx;

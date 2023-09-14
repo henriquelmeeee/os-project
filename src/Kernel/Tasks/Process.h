@@ -70,11 +70,12 @@ struct Registers {
   u64 dr3;
   u64 dr6;
   u64 dr7;
-};
+} __attribute__((packed));
 
 class Process {
   private:
   public:
+    Registers m_regs = {0};
     u64 pml4[512];
     u64 pdpt[512];
 
@@ -82,11 +83,10 @@ class Process {
 
     bool m_kernel_process;
 
-    TSS64 m_tss = {0};
-    Registers m_regs = {0};
+    //TSS64 m_tss = {0};
 
-    u128 m_cycles_started;
-    u128 m_cycles_finished;
+    //u128 m_cycles_started;
+    //u128 m_cycles_finished;
 
     Memory::Vector<Region> m_regions;
 
@@ -95,6 +95,9 @@ class Process {
     }
 
     void kernel_constructor(void* addr) {
+      if(addr == 0) {
+        throw_panic(0, "Invalid kernel routine address");
+      }
       m_regs.rsp = ((u64) kmalloc(1024)) + 1024;
       m_regs.rbp = m_regs.rsp;
       u64 cr0, cr2, cr3, cr4;
@@ -229,7 +232,7 @@ class Process {
 };
 
 extern Memory::Vector<Process> g_procs;
-extern Memory::Vector<Process> g_kernel_procs;
+extern Memory::Vector<Process*> g_kernel_procs;
 extern Process* g_current_proc;
 extern u64 g_timer_temporary_stack;
 #if 0

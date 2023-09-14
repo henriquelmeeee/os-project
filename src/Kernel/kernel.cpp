@@ -89,8 +89,8 @@ void kernel_process_test() {
 }
 
 
-Memory::Vector<Process> g_procs = Memory::Vector<Process>();
-Memory::Vector<Process> g_kernel_procs = Memory::Vector<Process>();
+Memory::Vector<Process> g_procs; //= Memory::Vector<Process>();
+Memory::Vector<Process*> g_kernel_procs; // = Memory::Vector<Process>();
 Process* g_current_proc = nullptr;
 u64 g_timer_temporary_stack;
 HAL::System system = HAL::System();
@@ -105,6 +105,8 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   dbg("*RBP for kmain(): %p\n", (void*)*rbp);
   dbg("*(RBP+8) for kmain(): %p, kentrypoint() address: %p\n", (void*)(*(rbp+1)), (void*)kentrypoint);
   dbg("BootloaderInfo: %p", (void*)info);
+
+  
 
   Text::text_clear();
   kprintf("Loading kernel", 9);
@@ -234,11 +236,11 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
 
   system.append_idt((u64) quantum_interruption_handle, 32);
-
+  g_kernel_procs = Memory::Vector<Process*>();
   //g_kernel_procs[0] = (proc);
-
-  //Process proc2 = Process("teste2", true, (void*)kernel_process_test);
-  //g_kernel_procs[1] = (proc2);
+  dbg("kernel_process_test: %p", (void*)kernel_process_test);
+  Process proc = Process("teste", true, (void*)kernel_process_test);
+  g_kernel_procs[0] = &proc;
   
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));
