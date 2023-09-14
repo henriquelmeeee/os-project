@@ -66,17 +66,17 @@ void disable_irq(int irq) {
 
 #define fo (char)15
 
-#if 0
 alignas(4096) Memory::PML4Entry kPML4[512];
 alignas(4096) Memory::PDPTEntry kPDPT[512];
 alignas(4096) Memory::PDEntry kPD[512];
 alignas(4096) Memory::PTEntry kPT[512][512];
-#endif
 
+#if 0
 alignas(4096) u64 kPML4[512];
 alignas(4096) u64 kPDPT[512];
 alignas(4096) u64 kPD[512];
 alignas(4096) u64 kPT[512][512];
+#endif
 
 //Memory::PhysicalRegion physical_stack;
 //Memory::PhysicalRegion physical_heap;
@@ -97,10 +97,9 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   dbg("RBP for kmain(): %p\n", rbp);
   dbg("*RBP for kmain(): %p\n", (void*)*rbp);
   dbg("*(RBP+8) for kmain(): %p, kentrypoint() address: %p\n", (void*)(*(rbp+1)), (void*)kentrypoint);
-
+  dbg("BootloaderInfo: %p", (void*)info);
 
   Text::text_clear();
-  throw_panic(0, "Test");
   kprintf("Loading kernel", 9);
   // TODO check if BootloaderInfo is corrupted
   
@@ -127,12 +126,11 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   if(!(system.init_idt())) {
     throw_panic(0, "Failed to initialize IDT");
   } 
-
+#if 0
   if(!(system.change_to_kernel_addr_space())) {
     throw_panic(0, "Failed to recreate pagination for Kernel");
   }
-
-#if 0
+#endif
 
   Memory::PML4Entry entry;
   
@@ -210,7 +208,6 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
       : "r" (kPML4)
       :"rax","memory"
       );
-#endif
 
   //physical_stack        = kmmap();
   //physical_heap         = kmmap();
@@ -221,10 +218,10 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 //outb(0xA1, 0x28);
 //outb(0x21, 0x04);
 //outb(0xA1, 0x02);
-outb(0x21, 0x01);
-outb(0xA1, 0x01);
+//outb(0x21, 0x01);
+//outb(0xA1, 0x01);
 
-  u32 divisor = 1193180 / 50;
+  u16 divisor = 65535;
   outb(0x43, 0x36);
   u8 low = (u8)divisor&0xFF;
   u8 high = (u8)((divisor>>8)&0xFF);
@@ -241,6 +238,7 @@ outb(0xA1, 0x01);
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));
 
+  kprintf("System booted");
   STI;
   while(true);
 

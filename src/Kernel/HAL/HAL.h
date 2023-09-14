@@ -14,11 +14,17 @@
 
 #define PORT (unsigned short)0x3f8 /* COM1 register, for control */
 
+#if 0
 extern u64 kPML4[512];
 extern u64 kPDPT[512];
 extern u64 kPD[512];
 extern u64 kPT[512][512];
+#endif
 
+extern Memory::PML4Entry kPML4[512];
+extern Memory::PDPTEntry kPDPT[512];
+extern Memory::PDEntry kPD[512];
+extern Memory::PTEntry kPT[512][512];
 struct IDTEntry16 {
   u16 offset_low;
   u16 selector = 0x08;
@@ -204,6 +210,7 @@ namespace HAL {
       }
 
       bool change_to_kernel_addr_space() {
+#if 0
         for(int i = 0; i<512; i++) {
           kPML4[i] = {0};
           kPDPT[i] = {0};
@@ -253,6 +260,7 @@ namespace HAL {
             : "rax", "memory"
 
           );
+#endif
         return true;
       }
 
@@ -315,7 +323,7 @@ namespace HAL {
         volatile struct {
           u16 length;
           u64 base;
-        } __attribute__((packed)) IDTR = { 256, (u64)IDT_entries};
+        } __attribute__((packed)) IDTR = { 4095, (u64)IDT_entries};
         __asm__ volatile (
             "lidt %0"
             :
@@ -343,15 +351,18 @@ namespace HAL {
         outb(PIC1_DATA, 0x04); 
         outb(PIC2_DATA, 0x02);
 
-        outb(PIC1_DATA, /*PIC_ICW4*/0x01);
         outb(PIC2_DATA, /*PIC_ICW4*/0x01);
+        outb(PIC1_DATA, /*PIC_ICW4*/0x01);
 
         // Desmascarando interrupção do teclado e timer apenas
       
         //outb(PIC1_DATA, 0xFD); // desmascara teclado
         //outb(PIC2_DATA, 0xFF); // mascara tudo da PIC2
         
-        outb(PIC1_DATA, 0x00); // desmascara tudo
+        outb(PIC1_DATA, 0);
+        outb(PIC2_DATA, 0);
+
+        outb(PIC1_DATA, 0xFE); // desmascara apenas o TIMER
         outb(PIC2_DATA, 0xFF);
 
         return true;
