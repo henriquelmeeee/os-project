@@ -90,7 +90,11 @@ class Process {
 
     Memory::Vector<Region> m_regions;
 
-    void kernel_constructor() {
+    void initialize_stack(void* rip_addr, void* rsp_addr) {
+      // ...
+    }
+
+    void kernel_constructor(void* addr) {
       m_regs.rsp = ((u64) kmalloc(1024)) + 1024;
       m_regs.rbp = m_regs.rsp;
       u64 cr0, cr2, cr3, cr4;
@@ -102,7 +106,52 @@ class Process {
       m_regs.cr2 = cr2;
       m_regs.cr3 = cr3;
       m_regs.cr4 = cr4;
+
+      m_regs.rip = (u64)addr;
       return;
+
+#if 0
+      // Agora, precisamos criar uma pilha inicial
+      // ela conterá todos registradores salvos em uma interrupção de timer
+      // isso é importante porque nos baseamos no timer
+      // para restaurar registradores.
+      __builtin_memset(((char*)m_regs.rsp)-1024, 0, 1024);
+      m_regs.rsp-=120; // 120 bytes é o tamanho total de todos registradores gerais que são salvos
+      // agora precisamos salvar na seguinte ordem:
+      // ss, rsp, rflags, cs, rip
+      
+      // Antes, vamos transformar o RBP salvo na stack como realmente a base
+      *((u64*)m_regs.rsp - 8*8) = m_regs.rsp;
+      u64 _ss = 0;
+      u64 _rsp = m_regs.rsp+120;
+      dbg("_rsp: %p", (void*)_rsp);
+      u64 _rflags;
+      u64 _cs = 0x08;
+      u64 _rip = (u64)addr;
+      asm volatile(
+          "pushf\n"
+          "pop %0\n"
+          : "=r" (_rflags)
+          :
+          :
+        );
+
+      m_regs.rsp-=8;
+      (* ((u64*)m_regs.rsp)) = _ss;
+      m_regs.rsp-=8;
+      (* ((u64*)m_regs.rsp)) = _rsp;
+      m_regs.rsp-=8;
+      (* ((u64*)m_regs.rsp)) = _rflags;
+      m_regs.rsp-=8;
+      (* ((u64*)m_regs.rsp)) = _cs;
+      m_regs.rsp-=8;
+      (* ((u64*)m_regs.rsp)) = _rip;
+
+      // Agora, vamos voltar o ponteiro RSP do processo para a base a qual ignora o InterruptFrame
+      m_regs.rsp+=8*5;
+      m_regs.rbp = m_regs.rsp;
+      return;
+#endif
     }
 
     void kernel_routine_set(void* addr) {
@@ -110,7 +159,7 @@ class Process {
       return;
     }
 
-    Process(char* name, bool kernel_process = false) : m_name(name) {
+    Process(char* name, bool kernel_process = false, void* addr=0) : m_name(name) {
       dbg("Processo %s criado", m_name);
       
       // Inicialmente, precisamos criar as regiões para o código e a stack
@@ -121,7 +170,7 @@ class Process {
       // esse é um layout temporário.
       
       if(kernel_process) {
-        kernel_constructor();
+        kernel_constructor(addr);
         return;
       }
       Region code_region      = Region(this);
@@ -180,7 +229,9 @@ class Process {
 };
 
 extern Memory::Vector<Process> g_procs;
-
+extern Memory::Vector<Process> g_kernel_procs;
+extern Process* g_current_proc;
+extern u64 g_timer_temporary_stack;
 #if 0
   enum state {
     RUNNING,

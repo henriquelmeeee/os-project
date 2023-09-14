@@ -151,6 +151,8 @@ class Vector {
     bool append(V value) {
       // TODO checar this->capacity
       //this->chunk+(last_element_index*sizeof(V)) = value;
+      if(last_element_index >= capacity);
+      chunk[last_element_index] = value;
       ++last_element_index;
       return true;
     }

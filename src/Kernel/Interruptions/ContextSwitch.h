@@ -1,3 +1,3 @@
 #pragma once
-
-void __attribute__((interrupt)) quantum_interruption_handle(void*);
+#include "preload.h"
+void __attribute__((interrupt)) quantum_interruption_handle(InterruptFrame* args);

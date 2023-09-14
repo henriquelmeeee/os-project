@@ -87,6 +87,11 @@ void kernel_process_test() {
   while(true);
 }
 
+
+Memory::Vector<Process> g_procs = Memory::Vector<Process>();
+Memory::Vector<Process> g_kernel_procs = Memory::Vector<Process>();
+Process* g_current_proc = nullptr;
+u64 g_timer_temporary_stack;
 HAL::System system = HAL::System();
 
 #include "Interruptions/ContextSwitch.h"
@@ -221,6 +226,24 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 //outb(0x21, 0x01);
 //outb(0xA1, 0x01);
 
+
+  system.DoAutomatedTests();
+    
+  g_timer_temporary_stack = ((u64)kmalloc(1024))+1024;
+
+  system.append_idt((u64) quantum_interruption_handle, 32);
+
+  Process proc = Process("teste", true, (void*)KernelTask::Watchdog);
+  g_kernel_procs.append(proc);
+
+  Process proc2 = Process("teste2", true, (void*)kernel_process_test);
+  g_kernel_procs.append(proc2);
+  
+  //u64 rip = (u64) proc.m_regs.rip;
+  //asm volatile("jmp *%0" : : "r" (rip));
+
+  kprintf("System booted");
+
   u16 divisor = 65535;
   outb(0x43, 0x36);
   u8 low = (u8)divisor&0xFF;
@@ -228,17 +251,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   outb(0x40, low);
   outb(0x40, high);
-  system.DoAutomatedTests();
-
-  system.append_idt((u64) quantum_interruption_handle, 32);
-
-  //Process proc = Process("teste", true);
-  //proc.kernel_routine_set((void*)KernelTask::Watchdog);
-  
-  //u64 rip = (u64) proc.m_regs.rip;
-  //asm volatile("jmp *%0" : : "r" (rip));
-
-  kprintf("System booted");
+  dbg("rip do kerneltask::watchdog = %p", (void*)KernelTask::Watchdog);
   STI;
   while(true);
 
