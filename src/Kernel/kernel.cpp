@@ -44,6 +44,7 @@ volatile void sleep(unsigned long long ticks) {
 
 unsigned long *pages_in_use;
 
+
 void halt() {
   __asm__ volatile(
       "hlt"
@@ -93,6 +94,7 @@ Memory::Vector<Process> g_kernel_procs = Memory::Vector<Process>();
 Process* g_current_proc = nullptr;
 u64 g_timer_temporary_stack;
 HAL::System system = HAL::System();
+
 
 #include "Interruptions/ContextSwitch.h"
 
@@ -229,28 +231,28 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   system.DoAutomatedTests();
     
-  g_timer_temporary_stack = ((u64)kmalloc(1024))+1024;
+  g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
 
   system.append_idt((u64) quantum_interruption_handle, 32);
 
-  Process proc = Process("teste", true, (void*)KernelTask::Watchdog);
-  g_kernel_procs.append(proc);
+  //g_kernel_procs[0] = (proc);
 
-  Process proc2 = Process("teste2", true, (void*)kernel_process_test);
-  g_kernel_procs.append(proc2);
+  //Process proc2 = Process("teste2", true, (void*)kernel_process_test);
+  //g_kernel_procs[1] = (proc2);
   
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));
 
   kprintf("System booted");
 
-  u16 divisor = 65535;
-  outb(0x43, 0x36);
-  u8 low = (u8)divisor&0xFF;
-  u8 high = (u8)((divisor>>8)&0xFF);
+u16 divisor = 65535;
+outb(0x43, 0x36);  // Define o modo e o canal do PIT
 
-  outb(0x40, low);
-  outb(0x40, high);
+u8 low = (u8)(divisor & 0xFF);
+u8 high = (u8)((divisor >> 8) & 0xFF);
+
+outb(0x40, low);  // Envia o byte inferior do divisor
+outb(0x40, high); // Envia o byte superior do divisor
   dbg("rip do kerneltask::watchdog = %p", (void*)KernelTask::Watchdog);
   STI;
   while(true);

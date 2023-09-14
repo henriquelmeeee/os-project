@@ -44,7 +44,6 @@ enum BootType {
   BIOS = 0,
   UEFI = 1,
 };
-
 struct BootloaderInfo {
   BootType boot_type;
 } __attribute__((packed));

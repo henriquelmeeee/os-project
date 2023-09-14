@@ -3,7 +3,14 @@
 #include "../Memory/Base_Mem.h"
 #include "preload.h"
 
+#include "../Tasks/KernelTasks/Watchdog.h"
+
 void __attribute__((interrupt)) quantum_interruption_handle(InterruptFrame *args) {
+  // por enquanto, esse handler apenas pega um unico processo
+  // q é o watchdog
+  // cria ele (pq o Memory::Vector n ta funcionando com append direito)
+  // e então pega seus registradores, coloca, e faz jmp nele
+  // é só um protótipo funcional
   CLI;
   SAVE_ALL_REGISTERS();
   u64 __saved_rip = args->rip;
@@ -22,11 +29,10 @@ void __attribute__((interrupt)) quantum_interruption_handle(InterruptFrame *args
 #endif
   Process* next_proc = &(g_kernel_procs[0]);
 
-  dbg("NEXT_PROC->m_regs.rip = %p", (void*)next_proc->m_regs.rip);
 
   u64 rax, rbx, rcx, rdx, rdi, rsi, rbp, r8, r9, r10, r11, r12, r13, r14, r15;
   u64 rip;
-
+  dbg("NEXT_PROC->m_regs.rip = %p", (void*)(next_proc->m_regs.rip));
   rax = next_proc->m_regs.rax;
   rbx = next_proc->m_regs.rbx;
   rcx = next_proc->m_regs.rcx;
@@ -60,16 +66,19 @@ void __attribute__((interrupt)) quantum_interruption_handle(InterruptFrame *args
     "popq %%rdx;"
     "popq %%rcx;"
     "popq %%rbx;"
+    "movb $0x20, %%al;"
+    "outb %%al, $0x20;"
     "popq %%rax;"
+    "sti;"
     "jmp *%0;"
+    "cli;"
+    "hlt;"
     :
     : "m" (rip)
     //: "r15", "r14", "r13", "r12", "r11", "r10", "r9", "r8",
       //"rbp", "rsi", "rdi", "rdx", "rcx", "rbx", "rax"
     :
   );
-  __asm__ volatile("hlt");
-
 
 
 
