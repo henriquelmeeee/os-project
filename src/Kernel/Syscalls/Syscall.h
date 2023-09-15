@@ -22,5 +22,6 @@ struct SyscallStack {
     u64 rbx;
     u64 rax;
 };
-
+extern "C" void handle_syscall_routine(u64 syscall_id, u64 arg2, u64 arg3, u64 arg4, u64 arg5);
+extern "C" void syscall_handler_stub();
 #endif

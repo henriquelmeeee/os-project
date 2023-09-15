@@ -24,20 +24,30 @@ u64 NO_CALLER_SAVED_REGISTERS volatile sys$write(SYSCALL_ARGS) {
   return 1;
 }
 
-void __attribute__((interrupt)) handle_syscall_routine(SYSCALL_ARGS) {
-  CLI;
-  dbg("syscall found");
-  unsigned long syscall_id = s->rax;
-  u64 to_ret;
 
-  //Process::SysProc* actual_process = Process::proc_current;
-  switch (syscall_id) {
-    case EXIT:
-      to_ret = sys$exit(s); break;
-    case WRITE:
-      to_ret = sys$write(s); break;
+extern "C" void handle_syscall_routine(u64 syscall_id, u64 arg2, u64 arg3, u64 arg4, u64 arg5) {
+  CLI;
+  dbg("syscall encontrada");
+  return;
+
+  switch(syscall_id) {
+    case 0:
+      // TODO exit() syscall
+    case 1:
+      {
+        char* pointer_to_string = (char*)arg2;
+        Text::Write(pointer_to_string);
+        goto __syscall_exit;
+      };
+
     default:
-      to_ret=0;break;
+      {
+        throw_panic(0, "panic temporário: syscall id invalido");
+        goto __syscall_exit;
+      };
   }
-  STI;
+
+__syscall_exit:
+  return;
+
 }

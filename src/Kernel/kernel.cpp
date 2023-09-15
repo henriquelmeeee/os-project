@@ -31,6 +31,9 @@
 
 #include "Processor.h"
 #include "HAL/HAL.h"
+
+#include "Syscalls/Syscall.h"
+
 alignas(4096) IDTEntry16 IDT_entries[256];
 
 unsigned long long mem_usage = 0;
@@ -85,6 +88,7 @@ alignas(4096) u64 kPT[512][512];
 
 void kernel_process_test() {
 _label:
+  asm volatile("syscall");
   dbg("kernel process!");
   for(int i = 0; i<99999999; i++);
   STI;
@@ -249,7 +253,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   kprintf("System booted");
 
-u16 divisor = 65535;
+u16 divisor = 1193182 / 20;
 outb(0x43, 0x36);  // Define o modo e o canal do PIT
 
 u8 low = (u8)(divisor & 0xFF);
@@ -258,6 +262,37 @@ u8 high = (u8)((divisor >> 8) & 0xFF);
 outb(0x40, low);  // Envia o byte inferior do divisor
 outb(0x40, high); // Envia o byte superior do divisor
   dbg("rip do kerneltask::watchdog = %p", (void*)KernelTask::Watchdog);
+
+
+  // configuração de syscall
+  // escrita no MSR
+
+  __asm__ volatile(
+      "wrmsr"
+      :
+      : "c" (0xC0000081), "a" (0x08ULL << 3), "d" (0x10ULL << 3)
+      :
+    );
+
+  u64 __syscall_handler_pointer = (u64)syscall_handler_stub;
+
+  __asm__ volatile(
+    "wrmsr" 
+    : 
+    : "c" (0xC0000082), "a" (__syscall_handler_pointer & 0xFFFFFFFF), "d" (__syscall_handler_pointer >> 32)
+    :
+  );
+
+  u32 __low, __high;
+  asm volatile("rdmsr" : "=a"(__low), "=d"(__high) : "c"(0xC0000080));
+  u64 efer = ((u64)high << 32) | low;
+
+  efer |= 1; // syscall enable
+  __low = (u32)efer;
+  __high = (u32)(efer >> 32);
+  asm volatile("wrmsr" : : "a"(__low), "d"(__high), "c"(0xC0000080));
+
+
   STI;
   while(true);
 

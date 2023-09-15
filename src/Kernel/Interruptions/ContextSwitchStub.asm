@@ -38,7 +38,7 @@ timer_isr:
   pop rbx
   pop rsi
   pop rdi
-  mov al, 0x20
+  mov al, 0xa0
   out 0x20, al
   pop rax
   pop rsp
