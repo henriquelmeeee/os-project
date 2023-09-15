@@ -100,15 +100,28 @@ class Process {
       }
       m_regs.rsp = ((u64) kmalloc(1024)) + 1024;
       m_regs.rbp = m_regs.rsp;
-      u64 cr0, cr2, cr3, cr4;
+      u64 cr0, cr2, cr3, cr4, rflags;
       asm volatile("mov %%cr0, %0" : "=r"(cr0));
       asm volatile("mov %%cr2, %0" : "=r"(cr2));
       asm volatile("mov %%cr3, %0" : "=r"(cr3));
       asm volatile("mov %%cr4, %0" : "=r"(cr4));
+      asm volatile("pushfq; popq %0;" : "=r" (rflags));
       m_regs.cr0 = cr0;
       m_regs.cr2 = cr2;
       m_regs.cr3 = cr3;
       m_regs.cr4 = cr4;
+      m_regs.rflags = rflags;
+
+      m_regs.rsp-=8;
+      *((u64*)m_regs.rsp) = 0;
+      m_regs.rsp-=8;
+      *((u64*)m_regs.rsp) = m_regs.rsp;
+      m_regs.rsp-=8;
+      *((u64*)m_regs.rsp) = m_regs.rflags;
+      m_regs.rsp-=8;
+      *((u64*)m_regs.rsp) = 0x08;
+      m_regs.rsp-=8;
+      *((u64*)m_regs.rsp) = (u64)addr;
 
       m_regs.rip = (u64)addr;
       return;

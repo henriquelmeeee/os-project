@@ -14,6 +14,15 @@ extern "C" void *memcpy(void* dest, const void *src, int size) {
   return dest;
 }
 
+void change_page_table(void* pml4_address) {
+  __asm__ volatile(
+      "movq %0, %%cr3;"
+      :
+      : "r"(pml4_address)
+      : "memory"
+    );
+}
+
 namespace Utils {
   // TODO usar template pode ser um pecado para o desempenho porque o CPP cria uma cópia da função pra cada tipo
   // que usa ela, o melhor é copiar byte-por-byte.

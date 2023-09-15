@@ -84,8 +84,11 @@ alignas(4096) u64 kPT[512][512];
 //Memory::PhysicalRegion physical_data;
 
 void kernel_process_test() {
+_label:
   dbg("kernel process!");
-  while(true);
+  for(int i = 0; i<99999999; i++);
+  STI;
+  goto _label;
 }
 
 
@@ -94,7 +97,6 @@ Memory::Vector<Process*> g_kernel_procs; // = Memory::Vector<Process>();
 Process* g_current_proc = nullptr;
 u64 g_timer_temporary_stack;
 HAL::System system = HAL::System();
-
 
 #include "Interruptions/ContextSwitch.h"
 

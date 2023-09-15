@@ -5,87 +5,29 @@
 
 #include "../Tasks/KernelTasks/Watchdog.h"
 
-void __attribute__((interrupt)) quantum_interruption_handle(InterruptFrame *args) {
+extern "C" void quantum_interruption_handle(u64 rsp) {
   // por enquanto, esse handler apenas pega um unico processo
   // q é o watchdog
   // cria ele (pq o Memory::Vector n ta funcionando com append direito)
   // e então pega seus registradores, coloca, e faz jmp nele
   // é só um protótipo funcional
-  CLI;
-  SAVE_ALL_REGISTERS();
-  u64 __saved_rip = args->rip;
-  u64 __saved_rsp = args->rsp;
-  u64 __saved_rbp;
-  u64* __rbp = nullptr;
-
+  Process* next_proc = (g_kernel_procs[0]);
+  dbg("RSP do processo atual: %p", (void*)rsp);
+  if(g_current_proc != nullptr)
+    g_current_proc->m_regs.rsp = rsp;
+  dbg("RSP do próximo processo: %p", (void*)next_proc->m_regs.rsp);
+  
   __asm__ volatile(
-      "movq %0, %%rbp"
-      : "=r" (__rbp)
-      :
-      : "memory"
+    "mov %0, %%rsp;"
+    "ret"
+    :
+    : "r" ((u64)next_proc->m_regs.rsp)
+    :
     );
-  __saved_rbp = *__rbp;
 
-  if(g_current_proc != nullptr) {
-    g_current_proc->m_regs.rip = __saved_rip;
-    g_current_proc->m_regs.rsp = __saved_rsp;
-    g_current_proc->m_regs.rbp = __saved_rbp;
-  }
-
-  Process* next_proc = g_kernel_procs[0];
-  if(next_proc->m_regs.rip == 0) {
-    throw_panic(0, "m_regs.rip invalido"); // TODO mensagem bonita de erro 
-  }
-  g_current_proc = next_proc;
-  dbg("NEXT_PROC->m_regs.rip = %p", (void*)(next_proc->m_regs.rip));
-  u64 rax, rbx, rcx, rdx, rdi, rsi, rbp, r8, r9, r10, r11, r12, r13, r14, r15;
-  u64 rip;
-  rax = next_proc->m_regs.rax;
-  rbx = next_proc->m_regs.rbx;
-  rcx = next_proc->m_regs.rcx;
-  rdx = next_proc->m_regs.rdx;
-  rdi = next_proc->m_regs.rdi;
-  rsi = next_proc->m_regs.rsi;
-  rbp = next_proc->m_regs.rbp;
-  r8 = next_proc->m_regs.r8;
-  r9 = next_proc->m_regs.r9;
-  r10 = next_proc->m_regs.r10;
-  r11 = next_proc->m_regs.r11;
-  r12 = next_proc->m_regs.r12;
-  r13 = next_proc->m_regs.r13;
-  r14 = next_proc->m_regs.r14;
-  r15 = next_proc->m_regs.r15;
-
-  rip = next_proc->m_regs.rip;
-
-  __asm__ volatile(
-    "popq %%r15;"
-    "popq %%r14;"
-    "popq %%r13;"
-    "popq %%r12;"
-    "popq %%r11;"
-    "popq %%r10;"
-    "popq %%r9;"
-    "popq %%r8;"
-    "popq %%rbp;"
-    "popq %%rsi;"
-    "popq %%rdi;"
-    "popq %%rdx;"
-    "popq %%rcx;"
-    "popq %%rbx;"
-    "movb $0x20, %%al;"
-    "outb %%al, $0x20;"
-    "popq %%rax;"
-    "sti;"
-    "jmp *%0;"
-    "cli;"
-    "hlt;"
-    :
-    : "m" (rip)
-    //: "r15", "r14", "r13", "r12", "r11", "r10", "r9", "r8",
-      //"rbp", "rsi", "rdi", "rdx", "rcx", "rbx", "rax"
-    :
-  );
+  throw_panic(0, "'ret' from quantum_interruption_handle failed");
+  __asm__ volatile("hlt");
+  //change_page_table((void*)kPML4);
 
 
 
