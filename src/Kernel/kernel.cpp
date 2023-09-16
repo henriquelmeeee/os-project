@@ -88,7 +88,6 @@ alignas(4096) u64 kPT[512][512];
 
 void kernel_process_test() {
 _label:
-  asm volatile("syscall");
   dbg("kernel process!");
   for(int i = 0; i<99999999; i++);
   STI;
@@ -253,7 +252,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   kprintf("System booted");
 
-u16 divisor = 1193182 / 20;
+u16 divisor = 7;
 outb(0x43, 0x36);  // Define o modo e o canal do PIT
 
 u8 low = (u8)(divisor & 0xFF);
