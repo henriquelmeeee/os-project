@@ -12,10 +12,10 @@ extern "C" void quantum_interruption_handle(u64 rsp) {
   // e então pega seus registradores, coloca, e faz jmp nele
   // é só um protótipo funcional
   Process* next_proc = (g_kernel_procs[0]);
-  dbg("RSP do processo atual: %p", (void*)rsp);
+  dbg("RSP do processo atual é: %p", (void*)rsp);
   if(g_current_proc != nullptr)
     g_current_proc->m_regs.rsp = rsp;
-  dbg("RSP do próximo processo: %p", (void*)next_proc->m_regs.rsp);
+  dbg("RSP do próximo processo é : %p", (void*)next_proc->m_regs.rsp);
   
   __asm__ volatile(
     "mov %0, %%rsp;"

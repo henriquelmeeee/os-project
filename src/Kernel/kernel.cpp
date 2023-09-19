@@ -90,7 +90,6 @@ void kernel_process_test() {
 _label:
   dbg("kernel process!");
   for(int i = 0; i<99999999; i++);
-  STI;
   goto _label;
 }
 
@@ -212,7 +211,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   
 
 
-  dbg("kmain()-> Recriando tabela de paginação\n");
+  dbg("kmain()-> Recriando tabela de paginação");
   __asm__ volatile( 
       //"mov %%cr4, %%rax;" 
       //"and $0xffffffdf, %%eax;" 
@@ -240,7 +239,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
     
   g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
 
-  system.append_idt((u64) quantum_interruption_handle, 32);
+  system.append_idt((u64) timer_isr, 32);
   g_kernel_procs = Memory::Vector<Process*>();
   //g_kernel_procs[0] = (proc);
   dbg("kernel_process_test: %p", (void*)kernel_process_test);
@@ -252,46 +251,17 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   kprintf("System booted");
 
-u16 divisor = 7;
-outb(0x43, 0x36);  // Define o modo e o canal do PIT
+  u16 divisor = 23864;
+  outb(0x43, 0x36);  // Define o modo e o canal do PIT
 
-u8 low = (u8)(divisor & 0xFF);
-u8 high = (u8)((divisor >> 8) & 0xFF);
+  u8 low = (u8)(divisor & 0xFF);
+  u8 high = (u8)((divisor >> 8) & 0xFF);
 
-outb(0x40, low);  // Envia o byte inferior do divisor
-outb(0x40, high); // Envia o byte superior do divisor
+  outb(0x40, low);  // Envia o byte inferior do divisor
+  outb(0x40, high); // Envia o byte superior do divisor
   dbg("rip do kerneltask::watchdog = %p", (void*)KernelTask::Watchdog);
 
-
-  // configuração de syscall
-  // escrita no MSR
-
-  __asm__ volatile(
-      "wrmsr"
-      :
-      : "c" (0xC0000081), "a" (0x08ULL << 3), "d" (0x10ULL << 3)
-      :
-    );
-
-  u64 __syscall_handler_pointer = (u64)syscall_handler_stub;
-
-  __asm__ volatile(
-    "wrmsr" 
-    : 
-    : "c" (0xC0000082), "a" (__syscall_handler_pointer & 0xFFFFFFFF), "d" (__syscall_handler_pointer >> 32)
-    :
-  );
-
-  u32 __low, __high;
-  asm volatile("rdmsr" : "=a"(__low), "=d"(__high) : "c"(0xC0000080));
-  u64 efer = ((u64)high << 32) | low;
-
-  efer |= 1; // syscall enable
-  __low = (u32)efer;
-  __high = (u32)(efer >> 32);
-  asm volatile("wrmsr" : : "a"(__low), "d"(__high), "c"(0xC0000080));
-
-
+  system.initialize_syscalls();
   STI;
   while(true);
 
