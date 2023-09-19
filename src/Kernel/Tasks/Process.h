@@ -126,9 +126,12 @@ class Process {
       
       // Agora, vamos terminar de construir a stack
       // simulando o interrupt frame
+      // TODO SS e RSP parecem não fazer parte, provavelmente por conta daquela parada de
+      // "se não mudou o nível de privilégio, não vale"
+      
 
       m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = 0; // SS
+      *((u64*)m_regs.rsp) = 0xBEEFDEAD; // SS
       m_regs.rsp+=8;
       *((u64*)m_regs.rsp) = m_regs.rsp; // RSP
       m_regs.rsp+=8;
