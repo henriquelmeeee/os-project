@@ -47,5 +47,4 @@ second_timer_isr:
   pop rbp
   pop rsp
   sti
-  hlt
   iretq

@@ -98,7 +98,8 @@ class Process {
       if(addr == 0) {
         throw_panic(0, "Invalid kernel routine address");
       }
-      m_regs.rsp = ((u64) kmalloc(1024)) + 1024;
+      m_regs.rsp = ((u64) kmalloc(1024)) + 512;
+      u64 __init_rsp = m_regs.rsp;
       m_regs.rbp = m_regs.rsp;
       u64 cr0, cr2, cr3, cr4, rflags;
       asm volatile("mov %%cr0, %0" : "=r"(cr0));
@@ -115,23 +116,32 @@ class Process {
       // Precisamos colocar 128 bytes de dados
       // que são o conteúdo dos registradores
       // o último é o RSP e o penúltimo o RBP, que o timer-handler dará "pop"
+      // antes disso, temos o Interrupt Frame que precisamos "simular"
+      // pois a primeira vez que o processo for executado ele não terá uma interrupt frame
+      // por padrão
+      *((u64*)(m_regs.rsp+8)) = 0xDEADBEEF;
+      m_regs.rsp+=(128);
+      *((u64*)(m_regs.rsp-16)) = m_regs.rsp+16; // RBP inicial
+      *((u64*)(m_regs.rsp-8)) = m_regs.rsp+8; // RSP inicial
       
-      m_regs.rsp-=(128-16);
-      *((u64*)m_regs.rsp) = m_regs.rsp-16; // RBP inicial
-      m_regs.rsp-=8;
-      *((u64*)m_regs.rsp) = m_regs.rsp-8; // RSP inicial
-      m_regs.rsp-=8;
-      *((u64*)m_regs.rsp) = 0xDEADBEEF; // SS 
-      m_regs.rsp-=8;
+      // Agora, vamos terminar de construir a stack
+      // simulando o interrupt frame
+
+      m_regs.rsp+=8;
+      *((u64*)m_regs.rsp) = 0; // SS
+      m_regs.rsp+=8;
       *((u64*)m_regs.rsp) = m_regs.rsp; // RSP
-      m_regs.rsp-=8;
+      m_regs.rsp+=8;
       *((u64*)m_regs.rsp) = m_regs.rflags;
-      m_regs.rsp-=8;
+      m_regs.rsp+=8;
       *((u64*)m_regs.rsp) = 0x08; // CS
-      m_regs.rsp-=8;
-      *((u64*)m_regs.rsp) = (u64)addr; // RIP
+      m_regs.rsp+=8;
+      *((u64*)m_regs.rsp) = (u64) addr;
+
+
 
       m_regs.rip = (u64)addr;
+      m_regs.rsp = __init_rsp;
       return;
 
 #if 0

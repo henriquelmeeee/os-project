@@ -31,7 +31,7 @@ extern "C" void quantum_interruption_handle(u64 rsp) {
     "lea second_timer_isr(%%rip), %%rax;"
     "jmp *%%rax;"
     :
-    : "r" ((u64)(next_proc->m_regs.rsp+128))
+    : "r" ((u64)(next_proc->m_regs.rsp))
     :
     );
 
