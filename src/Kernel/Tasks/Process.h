@@ -111,17 +111,25 @@ class Process {
       m_regs.cr3 = cr3;
       m_regs.cr4 = cr4;
       m_regs.rflags = rflags;
-
+      
+      // Precisamos colocar 128 bytes de dados
+      // que são o conteúdo dos registradores
+      // o último é o RSP e o penúltimo o RBP, que o timer-handler dará "pop"
+      
+      m_regs.rsp-=(128-16);
+      *((u64*)m_regs.rsp) = m_regs.rsp-16; // RBP inicial
       m_regs.rsp-=8;
-      *((u64*)m_regs.rsp) = 0;
+      *((u64*)m_regs.rsp) = m_regs.rsp-8; // RSP inicial
       m_regs.rsp-=8;
-      *((u64*)m_regs.rsp) = m_regs.rsp;
+      *((u64*)m_regs.rsp) = 0xDEADBEEF; // SS 
+      m_regs.rsp-=8;
+      *((u64*)m_regs.rsp) = m_regs.rsp; // RSP
       m_regs.rsp-=8;
       *((u64*)m_regs.rsp) = m_regs.rflags;
       m_regs.rsp-=8;
-      *((u64*)m_regs.rsp) = 0x08;
+      *((u64*)m_regs.rsp) = 0x08; // CS
       m_regs.rsp-=8;
-      *((u64*)m_regs.rsp) = (u64)addr;
+      *((u64*)m_regs.rsp) = (u64)addr; // RIP
 
       m_regs.rip = (u64)addr;
       return;

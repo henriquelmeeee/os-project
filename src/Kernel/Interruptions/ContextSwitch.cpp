@@ -2,6 +2,7 @@
 #include "../Utils/Base.h"
 #include "../Memory/Base_Mem.h"
 #include "preload.h"
+#include "ContextSwitch.h"
 
 #include "../Tasks/KernelTasks/Watchdog.h"
 
@@ -17,11 +18,20 @@ extern "C" void quantum_interruption_handle(u64 rsp) {
     g_current_proc->m_regs.rsp = rsp;
   dbg("RSP do próximo processo é : %p", (void*)next_proc->m_regs.rsp);
   
+  /*
+   É importante utilizarmos "m_regs.rsp+128" porque
+   a stack salva em m_regs é a stack original do processo
+   que no caso é antes dele realmente salvar todos os registradores
+   depois do interrupt frame
+   então precisamos fazer com que cobremos os registradores salvos pelo push
+  */
+
   __asm__ volatile(
     "mov %0, %%rsp;"
-    "ret"
+    "lea second_timer_isr(%%rip), %%rax;"
+    "jmp *%%rax;"
     :
-    : "r" ((u64)next_proc->m_regs.rsp)
+    : "r" ((u64)(next_proc->m_regs.rsp+128))
     :
     );
 

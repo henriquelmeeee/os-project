@@ -2,13 +2,15 @@
 
 
 global timer_isr
+global second_timer_isr
 extern quantum_interruption_handle
 
 timer_isr:
   cli
+  push rsp
   push rbp
   mov rbp, rsp
-  push rsp
+  pop rdx
   push rax
   push rdi
   push rsi
@@ -23,9 +25,9 @@ timer_isr:
   push r14
   push r15
   mov rax, rbp
-  sub rax, 8 ; agora RAX = RSP original do processo
+  sub rax, 16 ; agora RAX = RSP original do processo atual
   call quantum_interruption_handle
-  pop rbp
+second_timer_isr:
   pop r15
   pop r14
   pop r13
@@ -38,9 +40,12 @@ timer_isr:
   pop rbx
   pop rsi
   pop rdi
-  mov al, 0xa0
+  mov al, 0x20
   out 0x20, al
   pop rax
+  pop rdx
+  pop rbp
   pop rsp
   sti
+  hlt
   iretq
