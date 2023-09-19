@@ -6,13 +6,23 @@
 
 #include "../Tasks/KernelTasks/Watchdog.h"
 
+
+int last_proc_is_zero = 0;
+
 extern "C" void quantum_interruption_handle(u64 rsp) {
   // por enquanto, esse handler apenas pega um unico processo
   // q é o watchdog
   // cria ele (pq o Memory::Vector n ta funcionando com append direito)
   // e então pega seus registradores, coloca, e faz jmp nele
   // é só um protótipo funcional
-  Process* next_proc = (g_kernel_procs[0]);
+  Process* next_proc;
+  if(last_proc_is_zero == 0) {
+    next_proc = (g_kernel_procs[0]);
+    last_proc_is_zero = 1;
+  } else {
+    last_proc_is_zero = 0;
+    next_proc = (g_kernel_procs[1]);
+  }
   dbg("RSP do processo atual é: %p", (void*)rsp);
   if(g_current_proc != nullptr)
     g_current_proc->m_regs.rsp = rsp;

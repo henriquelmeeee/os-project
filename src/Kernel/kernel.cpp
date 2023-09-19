@@ -88,11 +88,19 @@ alignas(4096) u64 kPT[512][512];
 
 void kernel_process_test() {
 _label:
-  dbg("kernel process!");
+  STI;
+  kprintf("kernel process!");
   for(int i = 0; i<99999999; i++);
   goto _label;
 }
 
+void kernel_process_test2() {
+_label2:
+  STI;
+  kprintf("another kernel process!");
+  for(int i = 0; i<99999999; i++);
+  goto _label2;
+}
 
 Memory::Vector<Process> g_procs; //= Memory::Vector<Process>();
 Memory::Vector<Process*> g_kernel_procs; // = Memory::Vector<Process>();
@@ -243,8 +251,12 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   g_kernel_procs = Memory::Vector<Process*>();
   //g_kernel_procs[0] = (proc);
   dbg("kernel_process_test: %p", (void*)kernel_process_test);
+  
   Process proc = Process("teste", true, (void*)kernel_process_test);
   g_kernel_procs[0] = &proc;
+
+  Process proc2 = Process("test2", true, (void*)kernel_process_test2);
+  g_kernel_procs[1] = &proc2;
   
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));
@@ -259,7 +271,6 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   outb(0x40, low);  // Envia o byte inferior do divisor
   outb(0x40, high); // Envia o byte superior do divisor
-  dbg("rip do kerneltask::watchdog = %p", (void*)KernelTask::Watchdog);
 
   system.initialize_syscalls();
   STI;

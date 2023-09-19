@@ -121,8 +121,8 @@ class Process {
       // por padrão
       *((u64*)(m_regs.rsp+8)) = 0xDEADBEEF;
       m_regs.rsp+=(128);
-      *((u64*)(m_regs.rsp-16)) = m_regs.rsp+16; // RBP inicial
-      *((u64*)(m_regs.rsp-8)) = m_regs.rsp+8; // RSP inicial
+      *((u64*)(m_regs.rsp-16)) = m_regs.rsp;  // RBP inicial
+      *((u64*)(m_regs.rsp-8)) = m_regs.rsp;   // RSP inicial
       
       // Agora, vamos terminar de construir a stack
       // simulando o interrupt frame
@@ -130,16 +130,16 @@ class Process {
       // "se não mudou o nível de privilégio, não vale"
       
 
+      //m_regs.rsp+=8;
+      //*((u64*)m_regs.rsp) = 0xBEEFDEAD; // SS
+      //m_regs.rsp+=8;
+      //*((u64*)m_regs.rsp) = m_regs.rsp; // RSP
+      //m_regs.rsp+=8;
+      *((u64*)m_regs.rsp) = (u64) addr;   // RIP
       m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = 0xBEEFDEAD; // SS
+      *((u64*)m_regs.rsp) = 0x08;         // CS
       m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = m_regs.rsp; // RSP
-      m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = m_regs.rflags;
-      m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = 0x08; // CS
-      m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = (u64) addr;
+      *((u64*)m_regs.rsp) = rflags;   // RFLAGS
 
 
 
