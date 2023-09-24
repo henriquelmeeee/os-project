@@ -10,7 +10,7 @@ timer_isr:
   push rsp
   push rbp
   mov rbp, rsp
-  pop rdx
+  push rdx ; TODO FIXME tem q fazer isso ser "push rdx" mas tem q cuidar da stack pq inicialmente isso era "pop" mas ta errado
   push rax
   push rdi
   push rsi
@@ -46,5 +46,12 @@ second_timer_isr:
   pop rdx
   pop rbp
   pop rsp
+
+
+  ; debugging purposes
+ ; pop rax
+ ; pop rbx
+ ; pop rdi
+  ; ...
   sti
   iretq

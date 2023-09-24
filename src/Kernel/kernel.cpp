@@ -86,20 +86,34 @@ alignas(4096) u64 kPT[512][512];
 //Memory::PhysicalRegion physical_heap;
 //Memory::PhysicalRegion physical_data;
 
-void kernel_process_test() {
+volatile void kernel_process_test() {
+  STI;
+  dbg("Kernel process 1 here!");
+  while(true);
 _label:
   STI;
+  goto _label;
+#if 0
+_label:
   kprintf("kernel process!");
   for(int i = 0; i<99999999; i++);
   goto _label;
+#endif
 }
 
-void kernel_process_test2() {
+volatile void kernel_process_test2() {
+  STI;
+  dbg("Kernel process 2 here!");
+  __asm__ volatile("int $3");
+  while(true);
 _label2:
   STI;
+  goto _label2;
+#if 0
   kprintf("another kernel process!");
   for(int i = 0; i<99999999; i++);
   goto _label2;
+#endif
 }
 
 Memory::Vector<Process> g_procs; //= Memory::Vector<Process>();
@@ -117,7 +131,6 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   dbg("*RBP for kmain(): %p\n", (void*)*rbp);
   dbg("*(RBP+8) for kmain(): %p, kentrypoint() address: %p\n", (void*)(*(rbp+1)), (void*)kentrypoint);
   dbg("BootloaderInfo: %p", (void*)info);
-
   
 
   Text::text_clear();
@@ -257,6 +270,9 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   Process proc2 = Process("test2", true, (void*)kernel_process_test2);
   g_kernel_procs[1] = &proc2;
+
+
+  g_kernel_procs[2] = nullptr;
   
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));

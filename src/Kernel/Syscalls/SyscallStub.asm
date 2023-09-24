@@ -36,4 +36,4 @@ syscall_handler_stub:
   pop rax
   pop rbp
   sti
-  sysret
+  sysretq

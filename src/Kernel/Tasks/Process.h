@@ -119,7 +119,7 @@ class Process {
       // antes disso, temos o Interrupt Frame que precisamos "simular"
       // pois a primeira vez que o processo for executado ele não terá uma interrupt frame
       // por padrão
-      *((u64*)(m_regs.rsp+8)) = 0xDEADBEEF;
+      *((u64*)(m_regs.rsp)) = 0xDEADBEEF;
       m_regs.rsp+=(128);
       *((u64*)(m_regs.rsp-16)) = m_regs.rsp;  // RBP inicial
       *((u64*)(m_regs.rsp-8)) = m_regs.rsp;   // RSP inicial
@@ -134,14 +134,13 @@ class Process {
       //*((u64*)m_regs.rsp) = 0xBEEFDEAD; // SS
       //m_regs.rsp+=8;
       //*((u64*)m_regs.rsp) = m_regs.rsp; // RSP
+      dbg("process rsp: %p", (void*)m_regs.rsp);
       //m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = (u64) addr;   // RIP
+      *((u64*)m_regs.rsp) = (u64)addr;
+      m_regs.rsp+=8; // TODO or 2 bytes? for CS
+      *((u16*)m_regs.rsp) = 0x08;
       m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = 0x08;         // CS
-      m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = rflags;   // RFLAGS
-
-
+      *((u64*)m_regs.rsp) = rflags; // rflags
 
       m_regs.rip = (u64)addr;
       m_regs.rsp = __init_rsp;

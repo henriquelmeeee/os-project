@@ -7,7 +7,7 @@
 #include "../Tasks/KernelTasks/Watchdog.h"
 
 
-int last_proc_is_zero = 0;
+int kernel_procs_round_robin = 0;
 
 extern "C" void quantum_interruption_handle(u64 rsp) {
   // por enquanto, esse handler apenas pega um unico processo
@@ -16,13 +16,10 @@ extern "C" void quantum_interruption_handle(u64 rsp) {
   // e então pega seus registradores, coloca, e faz jmp nele
   // é só um protótipo funcional
   Process* next_proc;
-  if(last_proc_is_zero == 0) {
-    next_proc = (g_kernel_procs[0]);
-    last_proc_is_zero = 1;
-  } else {
-    last_proc_is_zero = 0;
-    next_proc = (g_kernel_procs[1]);
-  }
+  if(g_kernel_procs[kernel_procs_round_robin] == nullptr)
+    kernel_procs_round_robin = 0;
+  next_proc = g_kernel_procs[kernel_procs_round_robin];
+  ++kernel_procs_round_robin;
   dbg("RSP do processo atual é: %p", (void*)rsp);
   if(g_current_proc != nullptr)
     g_current_proc->m_regs.rsp = rsp;
