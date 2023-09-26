@@ -128,34 +128,31 @@ echo "Building user-land stuff"
 sudo umount /dev/loop0 2>/dev/null
 sudo rm -rf /tmp/k_tmp
 sudo losetup --offset $((1000*512)) /dev/loop0 ../Build/disk.img
-sudo mke2fs -t ext2 /dev/loop0
-sudo mkdir /mnt/k_tmp
+sudo mke2fs -b 4096 -t ext2 /dev/loop0
+sudo mkdir /mnt/k_tmp 2>/dev/null
 sudo mount /dev/loop0 /mnt/k_tmp
 
 
 #sudo cp ../Userland/teste /mnt/k_tmp
-sudo cp ../Userland/apps/initd /mnt/initd
-sudo mkdir /mnt/k_tmp/diretorio
-sudo mkdir /mnt/k_tmp/outro_dir
+sudo cp ../Userland/apps/initd /mnt/k_tmp/initd
+
+#sudo mkdir /mnt/k_tmp/diretorio
+#sudo mkdir /mnt/k_tmp/outro_dir
 sudo chmod 777 /mnt/k_tmp
-sudo chmod 777 /mnt/k_tmp/diretorio
-sudo echo "abc" > /mnt/k_tmp/diretorio/arquivo
-sudo ls -lah /mnt/k_tmp/diretorio
+#sudo chmod 777 /mnt/k_tmp/diretorio
+#sudo echo "abc" > /mnt/k_tmp/diretorio/arquivo
+#sudo ls -lah /mnt/k_tmp/diretorio
 sudo rm -rf /mnt/k_tmp/lost+found 2>/dev/null
-
-
 
 echo "User-land:"
 ls -lah /mnt/k_tmp
-
+sudo dumpe2fs /dev/loop0
 sync
 
 sudo umount /mnt/k_tmp
 sudo losetup -d /dev/loop0
 sudo rm -rf /mnt/k_tmp
 sudo rm -rf /tmp/k_tmp
-
-
 
 rm prekernel.asm
 rm bootloader.asm

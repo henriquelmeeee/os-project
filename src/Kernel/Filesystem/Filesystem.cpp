@@ -16,15 +16,26 @@ FILE* FS::fopen(const char* path) {
   // TODO e vamos ignorar também blocos de ponteiro duplo/triplo
   /*ext2_dir_entry*/ char current_dir_entry[BLOCK_SIZE];
   ext2_inode found_inode;
+  dbg("%d", m_root_inode.i_mode);
   for(int i = 0; i<12; i++) {
-    __read_block((void*)&current_dir_entry, m_root_inode.i_block[i]+3);
-    ext2_dir_entry* _current_dir_entry = (ext2_dir_entry*)current_dir_entry;
-    const char* name = (const char*) (&(_current_dir_entry->name));
-    dbg("name: %s", name);
-    if(kstrcmp(name, path) == 0) {
-      dbg("path encontrado!");
-      while(true);
-      break;
+    if(m_root_inode.i_block[i] == 0) {
+      dbg("pulando este");
+      continue;
+    }
+    __read_block((void*)&current_dir_entry, m_root_inode.i_block[i]);
+    int block_offset = 0;
+
+    while(block_offset < BLOCK_SIZE) {
+      ext2_dir_entry* _current_dir_entry = (ext2_dir_entry*)(current_dir_entry + block_offset);
+      const char* name = (const char*)(&(_current_dir_entry->name));
+      dbg("name: %s", name);
+
+      if(kstrcmp(name, path) == 0) {
+        dbg("path encontrado");
+        while(true);
+      }
+
+      block_offset += _current_dir_entry->rec_len;
     }
   }
 

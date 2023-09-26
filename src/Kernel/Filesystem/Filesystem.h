@@ -106,32 +106,37 @@ class FS {
     void __read_block(void* write_back, u32 block, u32 group_block_index=0) {
       // vamos ignorar o "group_block_index" por enquanto
       char* _write_back = (char*)write_back;
-      u32 block_sector_start = EXT2_PARTITION_START + 10; // ignora bloco 0 e 1KB do superblock
+      u32 block_sector_start = EXT2_PARTITION_START + (8); // ignora bloco 0
       u32 block_sector = block_sector_start + (block * BLOCK_SIZE / 512);
-      read_from_sector(_write_back, block_sector);
+      read_from_sector(_write_back, block_sector); // hard-coded para 4096
       read_from_sector(_write_back+512, block_sector+1);
-      read_from_sector(_write_back+512, block_sector+2);
-      read_from_sector(_write_back+512, block_sector+3);
+      read_from_sector(_write_back+1024, block_sector+2);
+      read_from_sector(_write_back+1536, block_sector+3);
+      read_from_sector(_write_back+2048, block_sector+4);
+      read_from_sector(_write_back+2560, block_sector+5);
+      read_from_sector(_write_back+3072, block_sector+6);
+      read_from_sector(_write_back+3584, block_sector+7);
       return;
     }
 
     void __read_inode(void* write_back, u32 inode_index, ext2_group_desc gp_desc) {
       u32 inode_table = gp_desc.bg_inode_table;
       --inode_index; // index starts in "1"
-      u32 inodes_per_block = 512 / 128; // 128bytes = 1 inode
+      u32 inodes_per_block = 4096 / 256; // 256bytes = 1 inode
       
-      u32 inode_block = inode_table + inode_index / inodes_per_block;
+      u32 inode_block = inode_table  + ((inode_index) / inodes_per_block);
       char read_buffer[BLOCK_SIZE];
-      __read_block((void*)read_buffer, inode_block);
+      // inode_block - 1 porque o __read_block ignora o primeiro bloco por padrão
+      __read_block((void*)read_buffer, inode_block-1);
 
-      u32 offset_within_block = inode_index % inodes_per_block + 128;
-
-      __builtin_memcpy((char*)write_back, read_buffer + offset_within_block, 128);
+      u32 offset_within_block = (inode_index % inodes_per_block) * 256;
+      __builtin_memcpy((char*)write_back, read_buffer + offset_within_block, 256);
+      dbg("ext2fs: inode lido\ninode_table: %d\ninode_block: %d\noffset: %d", inode_table, inode_block, offset_within_block);
     }
     
     void __read_fs_metadata() {
       dbg("ext2fs: lendo metadados");
-      u16 sb_sector = EXT2_PARTITION_START + 2; // ignora bloco 0 (8 setores)
+      u16 sb_sector = EXT2_PARTITION_START + 2;
 
       read_from_sector((char*)&m_sb, sb_sector);
       read_from_sector(((char*)&m_sb)+512, sb_sector+1);
@@ -140,15 +145,22 @@ class FS {
         throw_panic(0, "magic number invalido ext2fs");
       }
 
-      u32 first_group_desc = m_sb.s_first_data_block + 1;
-
+      u32 first_group_desc = m_sb.s_first_data_block;
+      
       __read_block((void*)&m_root_inode_group_desc, first_group_desc);
+      if(m_root_inode_group_desc.bg_free_blocks_count == 0)
+        while(true);
 
       u32 inode_table_start = m_root_inode_group_desc.bg_inode_table;
-      
+      if(inode_table_start == 0) {
+        dbg("inode_table_start 0");
+        while(true);
+      }
+      dbg("inode_table_start %d", inode_table_start);
       u32 root_inode_index = 2;
       __read_inode((void*)&m_root_inode, root_inode_index, m_root_inode_group_desc);
       dbg("ext2fs: inicialização finalizada");
+      dbg("m_root_inode.i_blocks = %d",m_root_inode.i_blocks);
     }
 
     FS() {
