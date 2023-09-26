@@ -121,6 +121,7 @@ Memory::Vector<Process*> g_kernel_procs; // = Memory::Vector<Process>();
 Process* g_current_proc = nullptr;
 u64 g_timer_temporary_stack;
 HAL::System system = HAL::System();
+FS* g_fs;
 
 #include "Interruptions/ContextSwitch.h"
 
@@ -255,7 +256,10 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 //outb(0x21, 0x01);
 //outb(0xA1, 0x01);
 
-
+  g_fs = (FS*)kmalloc(sizeof(FS));
+  g_fs->init();
+  g_fs->fopen("initd");
+  while(true);
   system.DoAutomatedTests();
     
   g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
@@ -265,14 +269,10 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   //g_kernel_procs[0] = (proc);
   dbg("kernel_process_test: %p", (void*)kernel_process_test);
   
-  Process proc = Process("teste", true, (void*)kernel_process_test);
+  Process proc = Process("teste");
   g_kernel_procs[0] = &proc;
 
-  Process proc2 = Process("test2", true, (void*)kernel_process_test2);
-  g_kernel_procs[1] = &proc2;
-
-
-  g_kernel_procs[2] = nullptr;
+  g_kernel_procs[1] = nullptr;
   
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));
@@ -289,6 +289,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   outb(0x40, high); // Envia o byte superior do divisor
 
   system.initialize_syscalls();
+  while(true);
   STI;
   while(true);
 

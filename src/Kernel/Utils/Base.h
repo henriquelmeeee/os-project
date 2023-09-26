@@ -237,4 +237,8 @@ extern Memory::PML4Entry kPML4[512];
 
 void change_page_table(void* pml4_address);
 
+class FS;
+extern FS* g_fs;
+
 #endif
+

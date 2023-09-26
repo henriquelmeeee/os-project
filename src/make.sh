@@ -56,7 +56,8 @@ g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mge
 
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Utils/Base.cpp -o bin/tmp/base.o
 
-ld -nostdlib -static -T Core/KernelLinker.ld bin/tmp/kernel.o bin/tmp/heap.o bin/tmp/syscalls.o bin/tmp/contexts_stub.o bin/tmp/contexts.o bin/tmp/symbols.o bin/tmp/memory.o bin/tmp/watchdog.o bin/tmp/fpuerr.o bin/tmp/syscall_stub.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o -o bin/kernel.bin
+g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Filesystem/Filesystem.cpp -o bin/tmp/fs.o
+ld -nostdlib -static -T Core/KernelLinker.ld bin/tmp/kernel.o bin/tmp/heap.o bin/tmp/syscalls.o bin/tmp/fs.o bin/tmp/contexts_stub.o bin/tmp/contexts.o bin/tmp/symbols.o bin/tmp/memory.o bin/tmp/watchdog.o bin/tmp/fpuerr.o bin/tmp/syscall_stub.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o -o bin/kernel.bin
 
 echo "Compilando shell"
 
@@ -130,7 +131,10 @@ sudo losetup --offset $((1000*512)) /dev/loop0 ../Build/disk.img
 sudo mke2fs -t ext2 /dev/loop0
 sudo mkdir /mnt/k_tmp
 sudo mount /dev/loop0 /mnt/k_tmp
+
+
 #sudo cp ../Userland/teste /mnt/k_tmp
+sudo cp ../Userland/apps/initd /mnt/initd
 sudo mkdir /mnt/k_tmp/diretorio
 sudo mkdir /mnt/k_tmp/outro_dir
 sudo chmod 777 /mnt/k_tmp
@@ -138,6 +142,9 @@ sudo chmod 777 /mnt/k_tmp/diretorio
 sudo echo "abc" > /mnt/k_tmp/diretorio/arquivo
 sudo ls -lah /mnt/k_tmp/diretorio
 sudo rm -rf /mnt/k_tmp/lost+found 2>/dev/null
+
+
+
 echo "User-land:"
 ls -lah /mnt/k_tmp
 

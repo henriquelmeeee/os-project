@@ -209,6 +209,7 @@ class Process {
         kernel_constructor(addr);
         return;
       }
+
       Region code_region      = Region(this);
       Region stack_region     = Region(this);
 

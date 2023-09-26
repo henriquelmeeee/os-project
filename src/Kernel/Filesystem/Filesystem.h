@@ -1,15 +1,15 @@
 #pragma once
 
-#ifndef FS_H
-#define FS_H
-
-#include "../Utils/Base.h"
-#include "../Memory/Memory.h"
-#include "../Drivers/Disk.h"
-#include "../Drivers/VIDEO/preload.h"
+#ifndef __FS
+#define __FS
 
 #define EXT2_PARTITION_START 1000
 #define EXT2_SUPERBLOCK_START 2
+
+#include "../Utils/Base.h"
+#include "../Drivers/Disk.h"
+
+#define BLOCK_SIZE 4096
 
 struct ext2_super_block {
     u32 s_inodes_count;
@@ -79,320 +79,86 @@ inline u32 block_to_sector(u32 block, u32 entry = 1000) {
     return ((block * 4096) / 512) + entry;
 }
 
+class FILE {
+  public:
+    const char* m_absolute_path;
+    enum {
+      Directory,
+      RegularFile,
+    } m_file_type;
+
+    unsigned char* m_raw_data;
+
+    FILE(unsigned char* raw_data) : m_raw_data(raw_data) {
+
+    }
+};
+
+
 class FS {
   public:
-    ext2_super_block m_sb;
-    ext2_dir_entry m_dir_entry;
     ext2_inode m_root_inode;
-    ext2_inode m_root_inode_table;
-    ext2_group_desc m_group_desc;
-
-    u32 m_entry = EXT2_PARTITION_START;
-
-    u32 root_inode_table_sector;
-    u32 inode_table_start_block;
+    ext2_super_block m_sb;
+    ext2_group_desc m_root_inode_group_desc;
 
     u32 m_inode_size = 128;
-    u32 m_block_size = 4096;
 
-    u32 m_first_block_group_descriptor_sector;
-
-    bool __read_inode(u32 inode_number, ext2_inode* inode) {
-
-      // Inicialmente, leremos apenas do primeiro grupo de blocos
-      // mas para conseguirmos ler de outros grupos, basta ler sequencialmente no disco
-      // cada inode tem um identificador único
-
-      u32 offset_within_table = (inode_number) * m_inode_size;
-      u32 sector_to_read = root_inode_table_sector + (offset_within_table/512);
-      u32 offset_within_sector = offset_within_table % 512;
-
-      dbg("root_inode_table_sector: %d\n", root_inode_table_sector);
-      dbg("inode_number: %d\n", inode_number);
-      dbg("sector_to_read: %d\n", sector_to_read);
-      dbg("inode: %p\n", (void*)inode);
-      dbg("offset_within_sector: %d\n", offset_within_sector);
-
-      char buffer[512];
-      read_from_sector(buffer, sector_to_read);
-
-      dbg("buffer->i_mode: %d\n", ((ext2_inode*)buffer+offset_within_sector)->i_mode);
-
-      __builtin_memcpy((char*)inode, (char*) (buffer+offset_within_sector), 128);
-
-
-      return true;
+    void __read_block(void* write_back, u32 block, u32 group_block_index=0) {
+      // vamos ignorar o "group_block_index" por enquanto
+      char* _write_back = (char*)write_back;
+      u32 block_sector_start = EXT2_PARTITION_START + 10; // ignora bloco 0 e 1KB do superblock
+      u32 block_sector = block_sector_start + (block * BLOCK_SIZE / 512);
+      read_from_sector(_write_back, block_sector);
+      read_from_sector(_write_back+512, block_sector+1);
+      read_from_sector(_write_back+512, block_sector+2);
+      read_from_sector(_write_back+512, block_sector+3);
+      return;
     }
 
-    FS(u32 entry_sector = EXT2_PARTITION_START) {
-      dbg("Criando novo sistema de arquivos Ext2FS\n");
+    void __read_inode(void* write_back, u32 inode_index, ext2_group_desc gp_desc) {
+      u32 inode_table = gp_desc.bg_inode_table;
+      --inode_index; // index starts in "1"
+      u32 inodes_per_block = 512 / 128; // 128bytes = 1 inode
       
-      this->m_entry = entry_sector;
-      u32 superblock_sector = entry_sector + 2;
+      u32 inode_block = inode_table + inode_index / inodes_per_block;
+      char read_buffer[BLOCK_SIZE];
+      __read_block((void*)read_buffer, inode_block);
 
-      dbg("superblock_sector: %d\nm_entry: %d\n", superblock_sector, m_entry);
+      u32 offset_within_block = inode_index % inodes_per_block + 128;
 
-      read_from_sector((char*)&m_sb, superblock_sector);
-      read_from_sector(((char*)&m_sb)+512, superblock_sector+1);
-      dbg("magic sb: %d\n", m_sb.s_magic);
+      __builtin_memcpy((char*)write_back, read_buffer + offset_within_block, 128);
+    }
+    
+    void __read_fs_metadata() {
+      dbg("ext2fs: lendo metadados");
+      u16 sb_sector = EXT2_PARTITION_START + 2; // ignora bloco 0 (8 setores)
+
+      read_from_sector((char*)&m_sb, sb_sector);
+      read_from_sector(((char*)&m_sb)+512, sb_sector+1);
+
       if(m_sb.s_magic != 61267) {
-        throw_panic(0, "Invalid magic number in ext2fs");
-      } 
-      dbg("m_sb.s_first_data_block: %d\nm_sb.s_inodes_count: %d\n", m_sb.s_first_data_block, m_sb.s_inodes_count);
-
-      m_first_block_group_descriptor_sector = m_sb.s_first_data_block + 1;
-      read_from_sector((char*)&m_group_desc, block_to_sector(m_first_block_group_descriptor_sector));
-
-
-      dbg("Calculando setor para 'm_root_inode'\n");
-
-      m_inode_size = 128;
-      m_block_size = 4096;
-
-      root_inode_table_sector = 0;
-      inode_table_start_block = m_group_desc.bg_inode_table; // bloco para o inode table
-      root_inode_table_sector = (inode_table_start_block * 4096) / 512;
-      root_inode_table_sector += 1000;
-
-      read_from_sector((char*)&m_root_inode, root_inode_table_sector);
-      m_root_inode_table = m_root_inode;
-
-      u32 root_inode_index = 2;
-
-      char* root_inode_tmp = (char*) &m_root_inode;
-      root_inode_tmp+=(root_inode_index*m_inode_size);
-      m_root_inode = *((ext2_inode*) root_inode_tmp);
-
-      dbg("Sistema de arquivos montado com sucesso!\n");
-      dbg("M_ENTRY %d\n", m_entry);
-      dump_root_files();
-      dump_directory("/diretorio");
-      __asm__ volatile("hlt");
-    }
-
-    bool read_inode_block(char* dst, u32 block) {
-      // TODO cache em memória baseado no bloco ja lido
-      read_from_sector(dst, block_to_sector(block));
-      return true;
-    }
-
-    void dump_root_files() {
-      Text::Writeln("Ext2FS: Listing /", 0xb);
-      char buffer[m_block_size];
-      read_from_sector(buffer, block_to_sector(m_root_inode.i_block[0]));
-      dump_dir_entry((ext2_dir_entry*) buffer);
-    }
-
-    void dump_dir_entry(ext2_dir_entry* dir_entry) {
-      u32 offset = 0;
-      while(offset < m_block_size) {
-        char* buffer = (char*)dir_entry;
-        buffer+=offset;
-        ext2_dir_entry* entry = (ext2_dir_entry*) (buffer);
-        if(entry->rec_len > 0) {
-          Text::Write("File: ", 0xb);
-          Text::Writeln((const char*)entry->name);
-          offset += entry->rec_len;
-        } else {
-          return;
-        }
-      }
-    }
-
-    void dump_directory(const char* path) {
-      // TODO criar uma func pra isso
-      // e retornar como um Vector
-      // quando o kmalloc() estiver funcionando adequadamente
-      char directories_to_list[6][32] = {{0}};
-      int x = -1;
-      int y = 0;
-      char c;
-      int dirs_to_list = 0;
-      for(int i = 0; path[i]!=0; i++) {
-        c = path[i];
-        if(c == '/') {
-          x++;
-          y = 0;
-          ++dirs_to_list;
-        } else {
-          directories_to_list[x][y] = c;
-          ++y;
-        }
-      }
-      if(c == '/') --dirs_to_list;
-
-
-      dbg("directory /%s\n", (char*)directories_to_list[0]);
-      dbg("dirs_to_list %d\n", dirs_to_list);
-
-      ext2_inode current_inode = m_root_inode;
-      char buffer[m_block_size];
-
-      u32 actual_dir = 0;
-
-      while(actual_dir < dirs_to_list) {
-        read_from_sector(buffer, block_to_sector(current_inode.i_block[0]));
-
-        u32 offset = 0;
-        // Iteração do atual dir_entry relativo ao 'current_inode':
-        while(offset < m_block_size) {
-          ext2_dir_entry* entry = (ext2_dir_entry*)(buffer + offset);
-
-          if(entry->name[0] == '.') {
-            offset+=entry->rec_len;
-            continue;
-          }
-
-          dbg("offset: %d\n", offset);
-
-          if(entry->rec_len > 0) {
-            dbg("entry->rec_len > 0: true\n");
-
-            dbg("diretório atual: %s\n", entry->name);
-
-            if(kstrcmp((const char*)entry->name, (const char*)directories_to_list[actual_dir]) == 0) {
-              ++actual_dir;
-              ext2_dir_entry entry_backup = *entry;
-              dbg("inode number: %d\n", entry->inode);
-              __read_inode(entry->inode, &current_inode);
-              if(current_inode.i_mode == 0) {
-                throw_panic(0, "...");
-              }
-              // agora current_inode foi atualizado pro diretório encontrado
-              
-              read_from_sector(buffer, block_to_sector(current_inode.i_block[0]));
-
-              offset = 0;
-
-              if(actual_dir == dirs_to_list) {
-                dbg("Diretório encontrado\n");
-                Text::Write("Ext2FS: Listing /", 0xb);
-                Text::Writeln((const char*)entry_backup.name, 0xb);
-                dbg("entry->name: %s\n", entry_backup.name);
-                dump_dir_entry((ext2_dir_entry*) buffer);
-                return;
-              }
-            }
-
-            offset += entry->rec_len;
-          
-          } else {
-            dbg("entrada inválida\n");
-            return;
-          }
-
-        }
-      }
-    }
-
-    void* open(const char* path) {return nullptr;}
-};
-
-// Quando um processo quiser commitar as alterações
-// do arquivo no disco, ele usará a syscall write()
-// juntamente com o FD
-// isso atualizará todos blocos apontados pelo inode
-// para o novo conteúdo
-
-class File {
-  private:
-    Region* m_file_addr = nullptr;
-    Process* m_proc;
-    FS* m_fs;
-
-    void* m_inode;
-
-    u16 m_fd;
-    const char* m_absolute_path;
-
-  public:
-    File(const char* absolute_path, u16 fd, Process* proc, FS* fs) {
-      if(absolute_path == nullptr || proc == nullptr) {
-        throw_panic(0, "Invalid file");
+        throw_panic(0, "magic number invalido ext2fs");
       }
 
-      if(fs == nullptr) {
-        throw_panic(0, "Invalid filesystem");
-      }
+      u32 first_group_desc = m_sb.s_first_data_block + 1;
 
-      m_absolute_path = absolute_path;
-      m_proc = proc;
-      m_fs = fs;
+      __read_block((void*)&m_root_inode_group_desc, first_group_desc);
 
-      //m_inode = (void*)m_fs->get_inode(m_absolute_path);
-      //m_file_addr = m_fs->read(m_inode);
+      u32 inode_table_start = m_root_inode_group_desc.bg_inode_table;
       
-    }
-
-    ~File() {
-      kfree((void*)m_absolute_path);
-      // TODO for_each_vmobject of m_file_addr
-    }
-
-    bool commit() {
-      throw_panic(0, "File::commit() not implemented yet");
-      return false;
-      //if(!(m_fd->write(m_inode, m_file_adr))) {
-        //return false;  
-      //}
-    }
-};
-
-// OLD custom filesystem
-#if 0
-struct Binary {
-  //u16 magic_number;
-  u32 text_section_offset;
-  u32 data_section_offset;
-  //u32 text_section_size;
-  //u32 data_section_size;
-}; 
-
-struct Superblock {
-  u16 sectors[32];
-};
-
-struct Inode {
-  u32 superblock;
-  char name[32];
-  char reserved[476];
-} __attribute__((packed));
-
-class FS {
-  public:
-    Memory::Vector<Inode> inodes;
-    u32 total_inodes_amount;
-    Superblock superblock;
-
-    Inode inode_find_by_name(const char* name) {
-      for(int i = 0; i<total_inodes_amount; i++) {
-        //if(__builtin_strcmp(inodes[i].name, name) == 0)
-          //return inodes[i];
-      }
-
-      return {};
+      u32 root_inode_index = 2;
+      __read_inode((void*)&m_root_inode, root_inode_index, m_root_inode_group_desc);
+      dbg("ext2fs: inicialização finalizada");
     }
 
     FS() {
-      read_from_sector((char*)&total_inodes_amount, 200);
-      Text::Write("Filesystem: Inode count read is ", 2);
-      char count[16];
-      itos(total_inodes_amount, count);
-      Text::Writeln(count);
-
-      for(int i = 0; i<total_inodes_amount; i++) {
-        // HARDCODED !!!
-        char inode_buffer[512];
-        read_from_sector(inode_buffer, 201+i);
-        Inode inode = {*((unsigned int*)inode_buffer), "teste"};
-        Text::Write("-> File found: ");
-        Text::Write(inode.name);
-        __asm__ volatile("hlt");
-        //inodes.append(inode);
-      }
-
-      Text::Writeln("Filesystem: Inodes mapped", 2);
+      __read_fs_metadata();
+      return;
     }
+
+    void init() {__read_fs_metadata();}
+
+    FILE* fopen(const char* path);
 };
-#endif
+
 #endif
