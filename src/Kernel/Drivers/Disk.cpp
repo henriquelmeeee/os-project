@@ -15,7 +15,7 @@ typedef struct {
 } ide_channel_registers_t;
 
 void _read_from_sector(ide_channel_registers_t* channel, u8 slave, u32 lba, u8 sector_count, u16* buffer) {
-    dbg("starting read\n");
+    //dbg("starting read\n");
 
     // Polling para verificar se o drive está pronto
     while(inb(channel->base + 7) & 0x80);
@@ -39,12 +39,12 @@ void _read_from_sector(ide_channel_registers_t* channel, u8 slave, u32 lba, u8 s
     // Leitura dos dados
     insw(channel->base, buffer, sector_count * 256);
 
-    dbg("disco pronto\n");
+    //dbg("disco pronto\n");
 }
 
 void read_from_sector(const char* buffer, u64 sector) {
     ide_channel_registers_t channel;
-    dbg("called read_from_sector()\n");
+    //dbg("called read_from_sector()\n");
     channel.base = 0x1F0;
     channel.ctrl = 0x3F6;
 

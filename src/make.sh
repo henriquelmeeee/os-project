@@ -135,6 +135,8 @@ sudo mount /dev/loop0 /mnt/k_tmp
 
 #sudo cp ../Userland/teste /mnt/k_tmp
 sudo cp ../Userland/apps/initd /mnt/k_tmp/initd
+sudo mkdir /mnt/k_tmp/diretorio
+sudo touch /mnt/k_tmp/diretorio/arquivo_aqui
 
 #sudo mkdir /mnt/k_tmp/diretorio
 #sudo mkdir /mnt/k_tmp/outro_dir
@@ -153,7 +155,6 @@ sudo umount /mnt/k_tmp
 sudo losetup -d /dev/loop0
 sudo rm -rf /mnt/k_tmp
 sudo rm -rf /tmp/k_tmp
-
 rm prekernel.asm
 rm bootloader.asm
 

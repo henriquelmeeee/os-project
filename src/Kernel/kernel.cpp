@@ -259,6 +259,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   g_fs = (FS*)kmalloc(sizeof(FS));
   g_fs->init();
   g_fs->fopen("initd");
+  g_fs->list_dir("/diretorio");
   while(true);
   system.DoAutomatedTests();
     

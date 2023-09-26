@@ -29,7 +29,7 @@ struct ext2_super_block {
     i16 s_max_mnt_count;
     u16 s_magic;
     // ... e mais campos
-    volatile u8 s_padding[940]; // Espaço para preencher até 1024 bytes
+    volatile u8 s_padding[BLOCK_SIZE]; // Espaço para preencher até 1024 bytes
 } __attribute__((packed));
 
 struct ext2_inode {
@@ -51,7 +51,7 @@ struct ext2_inode {
     u32 i_dir_acl;
     u32 i_faddr;
     u8  i_osd2[12];
-    volatile char padding[512 - sizeof(u16)*6 - sizeof(u32)*28 - sizeof(u8)*12];
+    volatile char padding[BLOCK_SIZE];
 } __attribute__((packed));
 
 struct ext2_dir_entry {
@@ -59,7 +59,7 @@ struct ext2_dir_entry {
     u16 rec_len;
     u8  name_len;
     u8  file_type;
-    volatile char name[512 - 8 - 8 - 16 - 32];  // Tamanho variável
+    volatile char name[BLOCK_SIZE];  // Tamanho variável
 } __attribute__((packed));
 
 struct ext2_group_desc {
@@ -105,6 +105,7 @@ class FS {
 
     void __read_block(void* write_back, u32 block, u32 group_block_index=0) {
       // vamos ignorar o "group_block_index" por enquanto
+      // TODO parar de ignorar o bloco 0 e ai tirar o -1 dos __read_block calls
       char* _write_back = (char*)write_back;
       u32 block_sector_start = EXT2_PARTITION_START + (8); // ignora bloco 0
       u32 block_sector = block_sector_start + (block * BLOCK_SIZE / 512);
@@ -117,6 +118,21 @@ class FS {
       read_from_sector(_write_back+3072, block_sector+6);
       read_from_sector(_write_back+3584, block_sector+7);
       return;
+    }
+
+    ext2_dir_entry __found_entry_in_dirs(ext2_inode inode, const char* entry);
+
+    unsigned char* __read_regular_file_data(ext2_inode inode) {
+      // TODO FIXME temporariamente iremos alocar fixamente um buffer
+      // que cobre todos 12 blocos
+      unsigned char* buffer = (unsigned char*)kmalloc(BLOCK_SIZE * 12);
+      for(int i = 0; i<12; i++) {
+        if(inode.i_block[i] == 0)
+          return buffer;
+        __read_block(buffer+i*BLOCK_SIZE, inode.i_block[i]-1);
+      }
+      dbg("Ext2FS: Aviso: parecem existir blocos indiretos");
+      return buffer;
     }
 
     void __read_inode(void* write_back, u32 inode_index, ext2_group_desc gp_desc) {
@@ -159,7 +175,7 @@ class FS {
       dbg("inode_table_start %d", inode_table_start);
       u32 root_inode_index = 2;
       __read_inode((void*)&m_root_inode, root_inode_index, m_root_inode_group_desc);
-      dbg("ext2fs: inicialização finalizada");
+      dbg("Ext2FS: %d inodes, %d blocos", m_sb.s_inodes_count, m_sb.s_blocks_count);
       dbg("m_root_inode.i_blocks = %d",m_root_inode.i_blocks);
     }
 
@@ -170,7 +186,18 @@ class FS {
 
     void init() {__read_fs_metadata();}
 
+    typedef void (*each_dir_entry_CallbackFunc) (u32, ext2_dir_entry);
+
+    void for_each_dir_entry(each_dir_entry_CallbackFunc callback, ext2_inode inode) {
+      for(int i = 0; inode.i_block[i] != 0; i++) {
+        ext2_dir_entry direntry;
+        __read_block((void*)&direntry, inode.i_block[i]-1);
+        callback(i, direntry);
+      }
+    }
+
     FILE* fopen(const char* path);
+    Memory::Vector<char*> list_dir(const char* path);
 };
 
 #endif
