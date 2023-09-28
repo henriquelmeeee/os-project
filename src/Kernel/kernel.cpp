@@ -258,9 +258,8 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   g_fs = (FS*)kmalloc(sizeof(FS));
   g_fs->init();
-  g_fs->fopen("initd");
-  g_fs->list_dir("/diretorio");
-  while(true);
+  FILE* initd = g_fs->fopen("initd");
+  //g_fs->list_dir("/diretorio");
   system.DoAutomatedTests();
     
   g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
@@ -270,9 +269,8 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   //g_kernel_procs[0] = (proc);
   dbg("kernel_process_test: %p", (void*)kernel_process_test);
   
-  Process proc = Process("teste");
+  Process proc = Process("teste", true, (void*)kernel_process_test);
   g_kernel_procs[0] = &proc;
-
   g_kernel_procs[1] = nullptr;
   
   //u64 rip = (u64) proc.m_regs.rip;
@@ -290,10 +288,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   outb(0x40, high); // Envia o byte superior do divisor
 
   system.initialize_syscalls();
-  while(true);
   STI;
   while(true);
-
-  
 
 }

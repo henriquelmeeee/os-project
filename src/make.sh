@@ -135,8 +135,8 @@ sudo mount /dev/loop0 /mnt/k_tmp
 
 #sudo cp ../Userland/teste /mnt/k_tmp
 sudo cp ../Userland/apps/initd /mnt/k_tmp/initd
-sudo mkdir /mnt/k_tmp/diretorio
-sudo touch /mnt/k_tmp/diretorio/arquivo_aqui
+sudo mkdir /mnt/k_tmp/_test
+sudo touch /mnt/k_tmp/test
 
 #sudo mkdir /mnt/k_tmp/diretorio
 #sudo mkdir /mnt/k_tmp/outro_dir

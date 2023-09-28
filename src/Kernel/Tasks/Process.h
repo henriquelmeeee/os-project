@@ -94,10 +94,7 @@ class Process {
       // ...
     }
 
-    void kernel_constructor(void* addr) {
-      if(addr == 0) {
-        throw_panic(0, "Invalid kernel routine address");
-      }
+    void build_stack(void* addr) {
       m_regs.rsp = ((u64) kmalloc(1024)) + 512;
       u64 __init_rsp = m_regs.rsp;
       m_regs.rbp = m_regs.rsp;
@@ -120,8 +117,8 @@ class Process {
       // pois a primeira vez que o processo for executado ele não terá uma interrupt frame
       // por padrão
       *((u64*)(m_regs.rsp)) = 0xDEADBEEF;
-      m_regs.rsp+=(128);
-      *((u64*)(m_regs.rsp-16)) = m_regs.rsp;  // RBP inicial
+      m_regs.rsp+=(120);
+      //*((u64*)(m_regs.rsp-16)) = m_regs.rsp;    // RBP inicial
       *((u64*)(m_regs.rsp-8)) = m_regs.rsp;   // RSP inicial
       
       // Agora, vamos terminar de construir a stack
@@ -136,12 +133,16 @@ class Process {
       //*((u64*)m_regs.rsp) = m_regs.rsp; // RSP
       dbg("process rsp: %p", (void*)m_regs.rsp);
       //m_regs.rsp+=8;
-      *((u64*)m_regs.rsp) = (u64)addr;
-      m_regs.rsp+=8; // TODO or 2 bytes? for CS
-      *((u16*)m_regs.rsp) = 0x08;
+      *((u64*)m_regs.rsp) = (u64)addr; // rip
+      m_regs.rsp+=8;
+      *((u16*)m_regs.rsp) = 0x08; // cs
       m_regs.rsp+=8;
       *((u64*)m_regs.rsp) = rflags; // rflags
-
+      m_regs.rsp += 8;
+      *((u64*)m_regs.rsp) = m_regs.rsp; // rsp
+      m_regs.rsp += 8;
+      *((u64*)m_regs.rsp) = 0; // ss
+      
       m_regs.rip = (u64)addr;
       m_regs.rsp = __init_rsp;
       return;
@@ -205,11 +206,8 @@ class Process {
       // Já a página virtual 600 é onde a stack começa, em direção ao código
       // esse é um layout temporário.
       
-      if(kernel_process) {
-        kernel_constructor(addr);
-        return;
-      }
-
+      build_stack(addr);
+      return;
       Region code_region      = Region(this);
       Region stack_region     = Region(this);
 

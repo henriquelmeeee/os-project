@@ -181,7 +181,17 @@ namespace HAL {
             break;
           u64* ret_addr = rbp;
           ret_addr+=1;
-          Symbols::Symbol* sym = Symbols::sym_lookup((void*)ret_addr);
+          u64 _ret_addr = (u64)ret_addr;
+          Symbols::Symbol* sym = Symbols::sym_lookup((void*)_ret_addr);
+          while(true) {
+            sym = Symbols::sym_lookup((void*)_ret_addr);
+            if(sym == nullptr) {
+              --_ret_addr;
+            } else {
+              break;
+            }
+          }
+
           if(sym != nullptr) {
             Text::Write("Call @ ");
             Text::Writeln(sym->name);
@@ -266,8 +276,23 @@ namespace HAL {
         return true;
       }
 
+      /*
+       O trap frame é o principal tipo de frame usado para interrupções
+       principalmente envolvendo o timer
 
-      bool append_idt(u64 addr, u32 offset) {
+       struct TrapFrame {
+        uint64_t r15, r14, r13, r12, r11, r10, r9, r8;
+        uint64_t rdi, rsi, rbp, rbx, rdx, rcx, rax;
+        uint64_t int_num, err_code;
+        uint64_t rip, cs, rflags, rsp, ss;
+      };
+
+      "rsp" e "ss" não estarão obrigatoriamente na stack, mas não há problema
+      porque eles são os últimos
+
+      */
+
+      bool append_idt(u64 addr, u32 offset, u32 flags = 0x8E) {
         if(addr == 0) {
           throw_panic(0, "Invalid ISR address");
         }

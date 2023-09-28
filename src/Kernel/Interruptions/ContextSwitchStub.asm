@@ -7,7 +7,7 @@ extern quantum_interruption_handle
 
 timer_isr:
   cli
-  push rsp
+  ;push rsp
   push rbp
   mov rbp, rsp
   push rdx ; TODO FIXME tem q fazer isso ser "push rdx" mas tem q cuidar da stack pq inicialmente isso era "pop" mas ta errado
@@ -24,8 +24,7 @@ timer_isr:
   push r13
   push r14
   push r15
-  mov rax, rbp
-  sub rax, 16 ; agora RAX = RSP original do processo atual
+  mov rax, rsp
   call quantum_interruption_handle
 second_timer_isr:
   pop r15
@@ -45,7 +44,7 @@ second_timer_isr:
   pop rax
   pop rdx
   pop rbp
-  pop rsp
+  ;pop rsp
 
 
   ; debugging purposes

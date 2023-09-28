@@ -33,7 +33,7 @@ FILE* FS::fopen(const char* path) {
 
   ext2_inode current_inode = m_root_inode;
   Memory::Vector<const char*> entries;
-  entries[0] = "initd"; // temporariamente hard-coded
+  entries[0] = "test"; // temporariamente hard-coded
   entries[1] = nullptr;
 
   for(int i = 0; entries[i] != nullptr; i++) {
@@ -77,6 +77,7 @@ Memory::Vector<char*> FS::list_dir(const char* path) {
 
   ext2_inode current_inode = m_root_inode;
   ext2_dir_entry current_dir_entry;
+  // TODO n seria melhor o "to_ret" ter os inodes dos arquivos encontrados ao inves de seus nomes? fazer
   
   // primeiro, precisamos encontrar o inode do ultimo componente do path
   for(int i = 0; entries[i] != nullptr; i++) {

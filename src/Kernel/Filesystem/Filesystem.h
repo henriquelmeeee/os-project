@@ -29,7 +29,7 @@ struct ext2_super_block {
     i16 s_max_mnt_count;
     u16 s_magic;
     // ... e mais campos
-    volatile u8 s_padding[BLOCK_SIZE]; // Espaço para preencher até 1024 bytes
+    volatile u8 s_padding[BLOCK_SIZE];
 } __attribute__((packed));
 
 struct ext2_inode {
@@ -71,7 +71,7 @@ struct ext2_group_desc {
   u16 bg_used_dirs_count;
   u16 bg_pad;
   u32 bg_reserved[3];
-  volatile char padding[512-256 + 512]; // FIXME padding apenas com 512-256 tá dando overflow
+  volatile char padding[BLOCK_SIZE];
 } __attribute__((packed));
 
 inline u32 block_to_sector(u32 block, u32 entry = 1000) {
@@ -135,14 +135,20 @@ class FS {
       return buffer;
     }
 
-    void __read_inode(void* write_back, u32 inode_index, ext2_group_desc gp_desc) {
-      u32 inode_table = gp_desc.bg_inode_table;
-      --inode_index; // index starts in "1"
-      u32 inodes_per_block = 4096 / 256; // 256bytes = 1 inode
-      
+    void __read_inode(void* write_back, u32 inode_index, ext2_group_desc ___gp_desc={0}/*deprecated*/) {
+      --inode_index;
+
+      u32 inodes_per_block = BLOCK_SIZE / 256; // 256bytes = 1 inode
+      u32 inode_group = inode_index / inodes_per_block;
+#if 0 
+      ext2_group_desc gp_desc;
+      __read_block((void*)&gp_desc, m_group_desc_table_block + inode_group);
+#endif
+      u32 inode_table = ___gp_desc.bg_inode_table;
       u32 inode_block = inode_table  + ((inode_index) / inodes_per_block);
+
       char read_buffer[BLOCK_SIZE];
-      // inode_block - 1 porque o __read_block ignora o primeiro bloco por padrão
+      // inode_block - 1 porque o __read_block ignora o primeiro bloco por padrão TODO FIXME tirar isso! tirar o +8 do read_block
       __read_block((void*)read_buffer, inode_block-1);
 
       u32 offset_within_block = (inode_index % inodes_per_block) * 256;
@@ -164,8 +170,10 @@ class FS {
       u32 first_group_desc = m_sb.s_first_data_block;
       
       __read_block((void*)&m_root_inode_group_desc, first_group_desc);
-      if(m_root_inode_group_desc.bg_free_blocks_count == 0)
+      if(m_root_inode_group_desc.bg_free_blocks_count == 0) {
+        dbg("m_root_inode_group_desc.bg_free_blocks_count == 0");
         while(true);
+      }
 
       u32 inode_table_start = m_root_inode_group_desc.bg_inode_table;
       if(inode_table_start == 0) {
