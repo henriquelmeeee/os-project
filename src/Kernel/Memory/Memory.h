@@ -73,24 +73,7 @@ class Region {
       dbg("Nova região criada\n");
     }
 
-    bool map(VMObject *vm) {
-      if(vm == nullptr) {
-        throw_panic(0, "Passed nullptr to 'map_new_vm()'");
-      }
-      
-      m_vm_objs.append(vm);
-      m_size += 1; // 1 page
-
-      vm->map(m_process);
-
-      dbg("Alocado novo VMObject para Region\n");
-
-      return true;
-    }
-
-    bool map_all(u32 virtual_page_start) {
-      return true;
-    }
+    bool map();
 };
 
 #endif

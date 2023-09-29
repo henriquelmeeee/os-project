@@ -158,9 +158,9 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   dbg("kmain()-> Kernel iniciando");
   char* txtaddr = (char*) 0xB8000;
 
-  if(!(system.init_idt())) {
-    throw_panic(0, "Failed to initialize IDT");
-  } 
+  //if(!(system.init_idt())) {
+    //throw_panic(0, "Failed to initialize IDT");
+  //} 
 #if 0
   if(!(system.change_to_kernel_addr_space())) {
     throw_panic(0, "Failed to recreate pagination for Kernel");
@@ -264,7 +264,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
     
   g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
 
-  system.append_idt((u64) timer_isr, 32);
+  system.pic.append_idt((u64) timer_isr, 32);
   g_kernel_procs = Memory::Vector<Process*>();
   //g_kernel_procs[0] = (proc);
   dbg("kernel_process_test: %p", (void*)kernel_process_test);
