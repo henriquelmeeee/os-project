@@ -33,7 +33,7 @@ FILE* FS::fopen(const char* path) {
 
   ext2_inode current_inode = m_root_inode;
   Memory::Vector<const char*> entries;
-  entries[0] = "test"; // temporariamente hard-coded
+  entries[0] = "initd"; // temporariamente hard-coded
   entries[1] = nullptr;
 
   for(int i = 0; entries[i] != nullptr; i++) {
@@ -47,6 +47,7 @@ FILE* FS::fopen(const char* path) {
       dbg("Ext2FS: era o último componente do path; encontrado arquivo %s", entries[i]);
       unsigned char* __raw_data = __read_regular_file_data(current_inode);
       FILE* to_ret = (FILE*)kmalloc(sizeof(FILE));
+      __builtin_memcpy((char*)to_ret->m_raw_data, (char*)__raw_data, BLOCK_SIZE*12);
       to_ret->m_raw_data = __raw_data;
       //while(true); // temporário
       return to_ret;
@@ -60,7 +61,7 @@ FILE* FS::fopen(const char* path) {
     }
   }
   dbg("nada encontrado");
-
+  return nullptr;
   //kfree((void*)entries[0]);
 
   }

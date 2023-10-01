@@ -1,5 +1,20 @@
-#include "../Memory/Memory.h"
-#include "../Memory/Heap/Heap.h"
+#pragma once
+
+//#include "../Memory/Memory.h"
+//#include "../Memory/Heap/Heap.h"
+
+template<typename RetType, typename... Args>
+class Functor {
+  public:
+    RetType (*func)(Args...);
+    Functor(RetType (*func)(Args...)) : func(func) {}
+    RetType operator()(Args... args) {
+      //kprintf("Callback chamado");
+      return func(args...);
+    }
+};
+
+#if 0
 
 namespace Memory {
 template <typename V>
@@ -99,4 +114,4 @@ namespace Spinlock {
   }
 };
 
-
+#endif

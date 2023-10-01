@@ -129,10 +129,9 @@ class ACPI {
 
 namespace HAL {
   class System {
-    private:
+    public:
       ACPI acpi;
       PIC pic;
-    public:
       unsigned long long TOTAL_RAM;
 
       System() {
