@@ -49,10 +49,14 @@ class ElfImage {
         u32 amount_of_program_headers = m_elf_header->e_phnum;
         u32 ph_offset = m_elf_header->e_phoff;
 
+        dbg("amount_of_program_headers: %d", amount_of_program_headers);
+        dbg("ph_offset: %d", ph_offset);
+
         current_phdr = (Elf64_Phdr*) ((char*)m_elf_header)+ph_offset;
         for(int i = 0; i<amount_of_program_headers; i++) {
           callback(current_phdr, args...);
           current_phdr = (Elf64_Phdr*) ((char*)current_phdr) + (m_elf_header->e_phentsize);
+          return;
         }
         // Exemplo de uso:
         // Functor<int, int> callback(functionHere);

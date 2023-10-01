@@ -5,6 +5,8 @@
 
 #include "Base_Mem.h"
 #include "../Utils/Base.h"
+#include "../kstd/stdlib.h"
+
 class Process;
 class Region;
 
@@ -67,10 +69,14 @@ class Region {
   private:
     Memory::Vector<VMObject*> m_vm_objs;
     Process* m_process;
+    u64 current_vaddr = 0;
     u32 m_size;
   public:
-    Region(Process* process) : m_process(process) {
+    Region(Process* process, u64 vaddr_base) : m_process(process) {
       dbg("Nova região criada\n");
+      current_vaddr = vaddr_base;
+      m_vm_objs.append(new VMObject(vaddr_base)); // aloca uma única página por enquanto
+                                                  // mas ainda não está mapeada para nenhum endereço físico
     }
 
     bool map();

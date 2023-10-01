@@ -3,6 +3,10 @@
 //#include "../Memory/Memory.h"
 //#include "../Memory/Heap/Heap.h"
 
+//#include "../Memory/Memory.h"
+
+#include "../Memory/Heap/Heap.h"
+
 template<typename Lambda>
 class Functor {
   public:
@@ -19,6 +23,14 @@ template<typename Lambda>
 Functor<Lambda> MakeFunctor(Lambda&& lambda) {
   return Functor<Lambda>(lambda);
 }
+#if 0
+void* operator new(unsigned long size) {
+  void* to_ret = kmalloc(size);
+  return to_ret;
+}
+TODO colocar o operator new aqui na stdlib
+#endif
+
 
 #if 0
 template<typename RetType, typename... Args>

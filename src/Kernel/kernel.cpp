@@ -259,8 +259,9 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   g_fs = (FS*)kmalloc(sizeof(FS));
   g_fs->init();
   FILE* initd = g_fs->fopen("initd");
+  dbg("teste");
   //g_fs->list_dir("/diretorio");
-  system.DoAutomatedTests();
+  //system.DoAutomatedTests();
     
   g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
 

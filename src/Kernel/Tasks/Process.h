@@ -209,6 +209,8 @@ class Process {
 
       auto callback = MakeFunctor([&](Elf64_Phdr* current_phdr) {dbg("here!");});
       m_elf_image.for_each_program_header(callback);
+      dbg("finalizado");
+      while(true);
       return;
       // Inicialmente, precisamos criar as regiões para o código e a stack
       // Essas regiões conterão uma lista de VMObjects
@@ -219,8 +221,8 @@ class Process {
       
       //build_stack(addr);
       //return;
-      Region code_region      = Region(this);
-      Region stack_region     = Region(this);
+      Region code_region      = Region(this, 0);
+      Region stack_region     = Region(this, 0);
 
       // TODO precisamos carregar o binário do filesystem
       // e pegar tudo dele e colocar em diferentes páginas VMObject

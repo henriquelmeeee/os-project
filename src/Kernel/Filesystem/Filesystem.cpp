@@ -14,7 +14,7 @@ ext2_dir_entry FS::__found_entry_in_dirs(ext2_inode inode, const char* entry) {
   for(int block_index = 0; block_index<12; block_index++) {
     u32 offset = 0;
     char dir_entry_buffer[BLOCK_SIZE];
-    __read_block((void*)dir_entry_buffer, inode.i_block[block_index]-1);
+    __read_block((void*)dir_entry_buffer, inode.i_block[block_index]);
     ext2_dir_entry to_ret = {};
     while(offset < BLOCK_SIZE) {
       ext2_dir_entry* current_entry = (ext2_dir_entry*)(dir_entry_buffer+offset);
@@ -33,7 +33,7 @@ FILE* FS::fopen(const char* path) {
 
   ext2_inode current_inode = m_root_inode;
   Memory::Vector<const char*> entries;
-  entries[0] = "initd"; // temporariamente hard-coded
+  entries[0] = "teste"; // temporariamente hard-coded
   entries[1] = nullptr;
 
   for(int i = 0; entries[i] != nullptr; i++) {
@@ -46,6 +46,7 @@ FILE* FS::fopen(const char* path) {
     if(entry.file_type == EXT2_REGULAR_FILE) {
       dbg("Ext2FS: era o último componente do path; encontrado arquivo %s", entries[i]);
       unsigned char* __raw_data = __read_regular_file_data(current_inode);
+      dbg("__raw_data[1] = %c", __raw_data[1]);
       FILE* to_ret = (FILE*)kmalloc(sizeof(FILE));
       //__builtin_memcpy((char*)to_ret->m_raw_data, (char*)__raw_data, BLOCK_SIZE*12);
       to_ret->m_raw_data = __raw_data;
@@ -94,7 +95,7 @@ Memory::Vector<char*> FS::list_dir(const char* path) {
   for(int x = 0; x<12; x++) {
 // Aqui nós reusamos o "current_dir_entry"
     // TODO for_each_dir_entry()
-    __read_block((void*)&current_dir_entry, current_inode.i_block[x]-1);
+    __read_block((void*)&current_dir_entry, current_inode.i_block[x]);
     while(offset < BLOCK_SIZE) {
       ext2_dir_entry* _current_dir_entry = (ext2_dir_entry*) (((char*)&current_dir_entry) + offset);
 

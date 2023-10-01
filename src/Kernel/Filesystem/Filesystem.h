@@ -105,9 +105,8 @@ class FS {
 
     void __read_block(void* write_back, u32 block, u32 group_block_index=0) {
       // vamos ignorar o "group_block_index" por enquanto
-      // TODO parar de ignorar o bloco 0 e ai tirar o -1 dos __read_block calls
       char* _write_back = (char*)write_back;
-      u32 block_sector_start = EXT2_PARTITION_START + (8); // ignora bloco 0
+      u32 block_sector_start = EXT2_PARTITION_START;
       u32 block_sector = block_sector_start + (block * BLOCK_SIZE / 512);
       read_from_sector(_write_back, block_sector); // hard-coded para 4096
       read_from_sector(_write_back+512, block_sector+1);
@@ -129,7 +128,7 @@ class FS {
       for(int i = 0; i<12; i++) {
         if(inode.i_block[i] == 0)
           return buffer;
-        __read_block(buffer+i*BLOCK_SIZE, inode.i_block[i]-1);
+        __read_block(buffer+i*BLOCK_SIZE, inode.i_block[i]);
         dbg("__read_regular_file_data: ++i");
       }
       dbg("Ext2FS: Aviso: parecem existir blocos indiretos");
@@ -150,7 +149,7 @@ class FS {
 
       char read_buffer[BLOCK_SIZE];
       // inode_block - 1 porque o __read_block ignora o primeiro bloco por padrão TODO FIXME tirar isso! tirar o +8 do read_block
-      __read_block((void*)read_buffer, inode_block-1);
+      __read_block((void*)read_buffer, inode_block);
 
       u32 offset_within_block = (inode_index % inodes_per_block) * 256;
       __builtin_memcpy((char*)write_back, read_buffer + offset_within_block, 256);
@@ -170,7 +169,7 @@ class FS {
 
       u32 first_group_desc = m_sb.s_first_data_block;
       
-      __read_block((void*)&m_root_inode_group_desc, first_group_desc);
+      __read_block((void*)&m_root_inode_group_desc, first_group_desc+1);
       if(m_root_inode_group_desc.bg_free_blocks_count == 0) {
         dbg("m_root_inode_group_desc.bg_free_blocks_count == 0");
         while(true);
@@ -200,7 +199,7 @@ class FS {
     void for_each_dir_entry(each_dir_entry_CallbackFunc callback, ext2_inode inode) {
       for(int i = 0; inode.i_block[i] != 0; i++) {
         ext2_dir_entry direntry;
-        __read_block((void*)&direntry, inode.i_block[i]-1);
+        __read_block((void*)&direntry, inode.i_block[i]);
         callback(i, direntry);
       }
     }

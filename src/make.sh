@@ -134,13 +134,11 @@ sudo mount /dev/loop0 /mnt/k_tmp
 
 
 #sudo cp ../Userland/teste /mnt/k_tmp
+sudo chmod 777 /mnt/k_tmp
 sudo cp ../Userland/apps/initd /mnt/k_tmp/initd
-sudo mkdir /mnt/k_tmp/_test
-sudo touch /mnt/k_tmp/test
-
+sudo echo "w" > /mnt/k_tmp/teste
 #sudo mkdir /mnt/k_tmp/diretorio
 #sudo mkdir /mnt/k_tmp/outro_dir
-sudo chmod 777 /mnt/k_tmp
 #sudo chmod 777 /mnt/k_tmp/diretorio
 #sudo echo "abc" > /mnt/k_tmp/diretorio/arquivo
 #sudo ls -lah /mnt/k_tmp/diretorio
