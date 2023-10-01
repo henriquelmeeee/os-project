@@ -19,7 +19,7 @@ struct Elf64_Ehdr {
   u16 e_shnum;        // Número de entradas no SHDR
   u16 e_shstrndx;     // Índice da seção de strings 
                       // no cabeçalho de seção
-};
+} __attribute__((packed));
 
 struct Elf64_Phdr {
   u32 p_type;         // Tipo de segmento
@@ -30,15 +30,17 @@ struct Elf64_Phdr {
   u64 p_filesz;       // Tamanho do segmento no arquivo
   u64 p_memsz;        // Tamanho do segmento na memória
   u64 p_align;
-};
+} __attribute__((packed));
 
 class ElfImage {
   private:
   public:
     Elf64_Ehdr* m_elf_header;
-    ElfImage(void* binary) {
+    ElfImage() {}
+    ElfImage(void* binary){
       dbg("ElfImage criado");
       m_elf_header = (Elf64_Ehdr*)binary;
+      dbg("m_elf_header->e_phoff: %d", m_elf_header->e_phoff);
       
     }
     template<typename Func, typename... Args>

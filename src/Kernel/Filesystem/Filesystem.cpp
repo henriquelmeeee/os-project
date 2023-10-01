@@ -47,7 +47,7 @@ FILE* FS::fopen(const char* path) {
       dbg("Ext2FS: era o último componente do path; encontrado arquivo %s", entries[i]);
       unsigned char* __raw_data = __read_regular_file_data(current_inode);
       FILE* to_ret = (FILE*)kmalloc(sizeof(FILE));
-      __builtin_memcpy((char*)to_ret->m_raw_data, (char*)__raw_data, BLOCK_SIZE*12);
+      //__builtin_memcpy((char*)to_ret->m_raw_data, (char*)__raw_data, BLOCK_SIZE*12);
       to_ret->m_raw_data = __raw_data;
       //while(true); // temporário
       return to_ret;

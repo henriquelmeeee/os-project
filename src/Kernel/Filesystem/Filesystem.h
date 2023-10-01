@@ -130,6 +130,7 @@ class FS {
         if(inode.i_block[i] == 0)
           return buffer;
         __read_block(buffer+i*BLOCK_SIZE, inode.i_block[i]-1);
+        dbg("__read_regular_file_data: ++i");
       }
       dbg("Ext2FS: Aviso: parecem existir blocos indiretos");
       return buffer;

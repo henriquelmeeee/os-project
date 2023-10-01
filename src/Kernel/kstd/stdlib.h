@@ -3,6 +3,24 @@
 //#include "../Memory/Memory.h"
 //#include "../Memory/Heap/Heap.h"
 
+template<typename Lambda>
+class Functor {
+  public:
+    Lambda lambda;
+    Functor(Lambda lambda) : lambda(lambda) {}
+
+    template <typename... Args>
+      auto operator()(Args... args) -> decltype(lambda(args...)) {
+        return lambda(args...);
+      }
+};
+
+template<typename Lambda>
+Functor<Lambda> MakeFunctor(Lambda&& lambda) {
+  return Functor<Lambda>(lambda);
+}
+
+#if 0
 template<typename RetType, typename... Args>
 class Functor {
   public:
@@ -13,7 +31,7 @@ class Functor {
       return func(args...);
     }
 };
-
+#endif
 #if 0
 
 namespace Memory {
