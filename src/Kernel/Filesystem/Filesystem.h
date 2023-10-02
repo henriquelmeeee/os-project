@@ -103,7 +103,7 @@ class FS {
 
     u32 m_inode_size = 128;
 
-    void __read_block(void* write_back, u32 block, u32 group_block_index=0) {
+    void __read_block(void* write_back, u64 block, u32 group_block_index=0) {
       // vamos ignorar o "group_block_index" por enquanto
       char* _write_back = (char*)write_back;
       u32 block_sector_start = EXT2_PARTITION_START;
@@ -123,13 +123,16 @@ class FS {
 
     unsigned char* __read_regular_file_data(ext2_inode inode) {
       // TODO FIXME temporariamente iremos alocar fixamente um buffer
-      // que cobre todos 12 blocos
-      unsigned char* buffer = (unsigned char*)kmalloc(BLOCK_SIZE * 12);
+      // que cobre todos 12 blocos usando o i_size do file
+      //unsigned char* buffer = (unsigned char*)kmalloc(BLOCK_SIZE * 12);
+      unsigned char* buffer = (unsigned  char*)kmalloc(inode.i_size);
+      dbg("__read_regular_file: size: %d", inode.i_size);
       for(int i = 0; i<12; i++) {
         if(inode.i_block[i] == 0)
           return buffer;
         __read_block(buffer+i*BLOCK_SIZE, inode.i_block[i]);
-        dbg("__read_regular_file_data: ++i");
+        dbg("__read_regular_file: block: %d", inode.i_block[i]);
+        //dbg("__read_regular_file_data: ++i\ni anterior: %d", i);
       }
       dbg("Ext2FS: Aviso: parecem existir blocos indiretos");
       return buffer;
