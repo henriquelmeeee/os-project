@@ -56,7 +56,6 @@ class ElfImage {
         for(int i = 0; i<amount_of_program_headers; i++) {
           callback(current_phdr, args...);
           current_phdr = (Elf64_Phdr*) ((char*)current_phdr) + (m_elf_header->e_phentsize);
-          return;
         }
         // Exemplo de uso:
         // Functor<int, int> callback(functionHere);

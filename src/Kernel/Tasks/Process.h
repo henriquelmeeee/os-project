@@ -14,6 +14,8 @@
 #include "ElfImage.h"
 #include "../Filesystem/Filesystem.h"
 
+#define __ELF_PT_LOAD 1
+
 struct TSS64 {
   u32 reserved0;
   u64 rsp0;
@@ -207,7 +209,18 @@ class Process {
       FILE* __elf_binary = g_fs->fopen("...");
       m_elf_image = ElfImage((void*)__elf_binary->m_raw_data);
 
-      auto callback = MakeFunctor([&](Elf64_Phdr* current_phdr) {dbg("here!");});
+      auto callback = MakeFunctor([&](Elf64_Phdr* current_phdr) {
+        if(current_phdr->p_type != __ELF_PT_LOAD)
+          return;
+        dbg("Process::Process(): current_phdr");
+        dbg("\tcurrent_phdr->p_vaddr: %p", (void*)current_phdr->p_vaddr);
+        m_regions.append(Region(this, current_phdr->p_vaddr));
+
+
+
+
+
+          });
       m_elf_image.for_each_program_header(callback);
       dbg("finalizado");
       while(true);
