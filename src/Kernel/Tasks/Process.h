@@ -207,7 +207,7 @@ class Process {
       FILE* __elf_binary = g_fs->fopen("...");
       m_elf_image = ElfImage((void*)__elf_binary->m_raw_data);
 
-      auto callback = MakeFunctor([&](Elf64_Phdr* current_phdr) {
+      auto phdr_callback = MakeFunctor([&](Elf64_Phdr* current_phdr) {
         if(current_phdr->p_type != _ELF_PT_LOAD)
           return;
         dbg("current_phdr->p_vaddr: %p", (void*)current_phdr->p_vaddr);
@@ -221,9 +221,9 @@ class Process {
         __builtin_memcpy((char*)current_phdr->p_vaddr, src_addr, current_phdr->p_filesz);
         tmp.map(); // mapeia para a área do processo
         m_regions.append(tmp);
-        
+        ___memory_dump((void*)current_phdr->p_vaddr, 24);
           });
-      m_elf_image.for_each_program_header(callback);
+      m_elf_image.for_each_program_header(phdr_callback);
       dbg("finalizado");
       while(true);
       return;
