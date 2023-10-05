@@ -32,8 +32,6 @@ struct Elf64_Phdr {
   u64 p_align;
 } __attribute__((packed));
 
-#include "../Core/API/Elf.h" // # TODO incluir apenas stdlib.h e la na stdlib.h vc inclui todas .h da API
-
 class ElfImage {
   private:
   public:

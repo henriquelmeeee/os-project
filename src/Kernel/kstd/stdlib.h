@@ -7,6 +7,9 @@
 
 #include "../Memory/Heap/Heap.h"
 
+#include "../Core/API/Elf.h"
+#include "../Core/API/Debug.h"
+
 template<typename Lambda>
 class Functor {
   public:

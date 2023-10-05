@@ -14,8 +14,6 @@
 #include "ElfImage.h"
 #include "../Filesystem/Filesystem.h"
 
-#define __ELF_PT_LOAD 1
-
 struct TSS64 {
   u32 reserved0;
   u64 rsp0;
@@ -210,16 +208,20 @@ class Process {
       m_elf_image = ElfImage((void*)__elf_binary->m_raw_data);
 
       auto callback = MakeFunctor([&](Elf64_Phdr* current_phdr) {
-        if(current_phdr->p_type != __ELF_PT_LOAD)
+        if(current_phdr->p_type != _ELF_PT_LOAD)
           return;
-        dbg("Process::Process(): current_phdr");
-        dbg("\tcurrent_phdr->p_vaddr: %p", (void*)current_phdr->p_vaddr);
-        m_regions.append(Region(this, current_phdr->p_vaddr));
-
-
-
-
-
+        dbg("current_phdr->p_vaddr: %p", (void*)current_phdr->p_vaddr);
+        Region tmp = Region(this, current_phdr->p_vaddr);
+        // Inicialmente iremos fazer apenas 1 página de alocação
+        // para facilitar o map()
+        // como temporariamente nós também usamos a mesma página física
+        // para o p_vaddr
+        // podemos usar ele de base para copiar os dados antes de mapear pro processo
+        char* src_addr = (char*)(__elf_binary->m_raw_data) + current_phdr->p_offset;
+        __builtin_memcpy((char*)current_phdr->p_vaddr, src_addr, current_phdr->p_filesz);
+        tmp.map(); // mapeia para a área do processo
+        m_regions.append(tmp);
+        
           });
       m_elf_image.for_each_program_header(callback);
       dbg("finalizado");

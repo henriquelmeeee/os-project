@@ -74,17 +74,18 @@ inline void* operator new(unsigned long size) {
 
 class Region {
   private:
-    Memory::Vector<VMObject*> m_vm_objs;
     Process* m_process;
     u64 current_vaddr = 0;
     u32 m_size;
   public:
+    Memory::Vector<VMObject*> m_vm_objs;
     Region(Process* process, u64 vaddr_base) : m_process(process) {
       dbg("Nova região criada\n");
       current_vaddr = vaddr_base;
-      return; // TODO fazer o append ali embaixo
-      m_vm_objs.append(new VMObject(vaddr_base)); // aloca uma única página por enquanto
-                                                  // mas ainda não está mapeada para nenhum endereço físico
+      m_vm_objs.append(new VMObject(vaddr_base, vaddr_base)); // aloca uma única página por enquanto
+                                                              // por enquanto, página virtual = física
+                                                              // apenas para fins de teste
+      
     }
 
     bool map();
