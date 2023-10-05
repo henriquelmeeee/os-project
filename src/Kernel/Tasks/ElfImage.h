@@ -32,6 +32,8 @@ struct Elf64_Phdr {
   u64 p_align;
 } __attribute__((packed));
 
+#include "../Core/API/Elf.h" // # TODO incluir apenas stdlib.h e la na stdlib.h vc inclui todas .h da API
+
 class ElfImage {
   private:
   public:
@@ -40,6 +42,9 @@ class ElfImage {
     ElfImage(void* binary){
       dbg("ElfImage criado");
       m_elf_header = (Elf64_Ehdr*)binary;
+      if(m_elf_header->e_ident[0] != _ELF_EI_MAGO) {
+        throw_panic(0, "elf invalido");
+      }
       dbg("m_elf_header->e_phoff: %d", m_elf_header->e_phoff);
       
     }
@@ -47,13 +52,13 @@ class ElfImage {
       void for_each_program_header(Func&& callback, Args... args) {
         Elf64_Phdr* current_phdr;
         u32 amount_of_program_headers = m_elf_header->e_phnum;
+        dbg("ElfImage::for_each_program_header: amount_of_program_headers: %d", amount_of_program_headers);
         u32 ph_offset = m_elf_header->e_phoff;
-
-        dbg("amount_of_program_headers: %d", amount_of_program_headers);
-        dbg("ph_offset: %d", ph_offset);
-
-        current_phdr = (Elf64_Phdr*) ((char*)m_elf_header)+ph_offset;
+        dbg("ElfImage::for_each_program_header: ph_offset: %d", ph_offset);
+        
+        current_phdr = (Elf64_Phdr*) (((char*)m_elf_header)+ph_offset);
         for(int i = 0; i<amount_of_program_headers; i++) {
+          dbg("ElfImage::for_each_program_header: current_phdr->p_type: %d\nmemsz: %d", current_phdr->p_type, current_phdr->p_memsz);
           callback(current_phdr, args...);
           current_phdr = (Elf64_Phdr*) ((char*)current_phdr) + (m_elf_header->e_phentsize);
         }
