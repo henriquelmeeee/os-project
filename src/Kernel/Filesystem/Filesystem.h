@@ -89,8 +89,11 @@ class FILE {
 
     unsigned char* m_raw_data;
 
-    FILE(unsigned char* raw_data) : m_raw_data(raw_data) {
-
+    FILE(unsigned char* raw_data, const char* absolute_path) {
+      this->m_raw_data = raw_data;
+      this->m_absolute_path = absolute_path;
+      dbg("[class FILE] m_raw_data: %p", (void*)m_raw_data);
+      dbg("[class FILE] m_absolute_path: %s", m_absolute_path);
     }
 };
 
@@ -126,6 +129,7 @@ class FS {
       // que cobre todos 12 blocos usando o i_size do file
       //unsigned char* buffer = (unsigned char*)kmalloc(BLOCK_SIZE * 12);
       unsigned char* buffer = (unsigned  char*)kmalloc(inode.i_size);
+      dbg("buffer ptr: %p", (void*)buffer);
       dbg("__read_regular_file: size: %d", inode.i_size);
       for(int i = 0; i<12; i++) {
         if(inode.i_block[i] == 0)

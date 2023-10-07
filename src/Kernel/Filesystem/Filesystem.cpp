@@ -29,7 +29,7 @@ ext2_dir_entry FS::__found_entry_in_dirs(ext2_inode inode, const char* entry) {
 #define EXT2_REGULAR_FILE 1
 
 FILE* FS::fopen(const char* path) {
-  dbg("Ext2FS: Abrindo arquivo no kernel: %s", path);
+  dbg("[FS::fopen()] [DEBUG] Abrindo arquivo no kernel: %s", path);
 
   ext2_inode current_inode = m_root_inode;
   Memory::Vector<const char*> entries;
@@ -39,19 +39,21 @@ FILE* FS::fopen(const char* path) {
   for(int i = 0; entries[i] != nullptr; i++) {
     ext2_dir_entry entry = __found_entry_in_dirs(current_inode, entries[i]);
     if(entry.inode == 0) {
-      dbg("Ext2FS: arquivo %s não encontrado (entry.inode==0)", entries[i]);
+      dbg("[FS::fopen()] [DEBUG] arquivo %s não encontrado (entry.inode==0)", entries[i]);
       return 0;
     }
-    dbg("Ext2FS: entries[%d] encontrado", i);
+    dbg("[FS::fopen()] [DEBUG] entries[%d] encontrado", i);
     if(entry.file_type == EXT2_REGULAR_FILE) {
-      dbg("Ext2FS: era o último componente do path; encontrado arquivo %s", entries[i]);
+      dbg("[FS::fopen()] [DEBUG] era o último componente do path; encontrado arquivo %s", entries[i]);
       __read_inode(&current_inode, entry.inode, m_root_inode_group_desc);
       //dbg("current_inode.i_block[0] = %d", current_inode.i_block[0]);
       unsigned char* __raw_data = __read_regular_file_data(current_inode);
-      dbg("__raw_data[0] = %d", (int)__raw_data[0]);
-      FILE* to_ret = (FILE*)kmalloc(sizeof(FILE));
+      //FILE* to_ret = (FILE*)kmalloc(sizeof(FILE));
       //__builtin_memcpy((char*)to_ret->m_raw_data, (char*)__raw_data, BLOCK_SIZE*12);
-      to_ret->m_raw_data = __raw_data;
+      FILE* to_ret = new FILE(__raw_data, "TODO name here");
+      dbg("[FS::fopen()] [DEBUG] to_ret->m_raw_data: %p", (void*)to_ret->m_raw_data);
+      dbg("[FS::fopen()] [DEBUG] [BREAKPOINT] bug; Process::Tasks::for_each_program_header 'm_raw_data' are invalid");
+      while(true);
       //while(true); // temporário
       return to_ret;
     } else {

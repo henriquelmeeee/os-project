@@ -171,43 +171,32 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
 
 #if 0
-
   Memory::PML4Entry entry;
-  
   for(int i = 0; i<512; i++) {
     kPDPT[i] = {0};
     kPML4[i] = {0};
     kPD[i] = {0};
   }
-
   entry.flags = 0; // limpa todas flags (define todas como 0)
   for(int pml4e = 0; pml4e<512; pml4e++) {
     //entry.flag_bits.physical_address = (reinterpret_cast<u64>(kPDPT)); // Inicialmente alocaremos 1 única PDPT
     entry.flags = (reinterpret_cast<u64>(kPDPT) & ~0xFFF) | 0x3; 
     kPML4[pml4e] = entry;
   }
-
-
-  
   // Iremos mapear muita memória para o Kernel, tudo identity-mapping
   // para que simplifiquemos a forma como o Kernel acessa a memória
   // o que incluirá o endereço 0xFEE00, localização da APIC
- 
   Memory::PDPTEntry PDPT_entry;
-
   PDPT_entry.flags = 0;
   for(int PDPTentry = 0; PDPTentry<512; PDPTentry++) {
     //PDPT_entry.flag_bits.physical_address = (reinterpret_cast<u64>(&(kPD[PDPTentry])));
     PDPT_entry.flags = (reinterpret_cast<u64>(&(kPD[PDPTentry])) & ~0xFFF) | 0x3; 
     kPDPT[PDPTentry] = PDPT_entry;
   }
-
   Memory::PDEntry PD_entry;
   PD_entry.flags = 0;
-
   Memory::PTEntry PT_entry;
   PT_entry.flags = 0;
- 
   /*
    * Cada diretório de páginas precisa apontar para uma tabela de páginas
    * cada tabela de páginas contém 512 entradas contíguas (aninhadas)
@@ -224,10 +213,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
     PD_entry.flags = (reinterpret_cast<u64>(&kPT[PDentry])) & ~0xFFF | 0x3; 
     kPD[PDentry] = PD_entry;
   }
-
-
   /*
-
   // 0x7F7 = página-base do APIC (0x00000000FEE00000)
   //entry.flag_bits.page_ppn = 0x7F7;
   //kPDPT[450] = entry;
@@ -235,9 +221,6 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   // 900MB até 902MB de memória == APIC.
   // o resto da memória só será configurada na hora de inicializar tabela para processos
 */
-  
-
-
   dbg("kmain()-> Recriando tabela de paginação");
   __asm__ volatile( 
       //"mov %%cr4, %%rax;" 
@@ -252,7 +235,6 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   //physical_stack        = kmmap();
   //physical_heap         = kmmap();
   //physical_data         = kmmap();
-
   //CreateKernelProcess((void*)KernelTask::Watchdog);
 //outb(0x21, 0x20);
 //outb(0xA1, 0x28);

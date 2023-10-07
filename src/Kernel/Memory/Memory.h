@@ -79,12 +79,13 @@ class Region {
     u32 m_size;
   public:
     Memory::Vector<VMObject*> m_vm_objs;
-    Region(Process* process, u64 vaddr_base) : m_process(process) {
+    Region(Process* process, u64 vaddr_base, u64 paddr_base = 0) : m_process(process) {
       dbg("Nova região criada\n");
       current_vaddr = vaddr_base;
-      m_vm_objs.append(new VMObject(vaddr_base, vaddr_base)); // aloca uma única página por enquanto
-                                                              // por enquanto, página virtual = física
-                                                              // apenas para fins de teste
+      if(paddr_base != 0)
+        m_vm_objs.append(new VMObject(vaddr_base, paddr_base));
+      else
+        m_vm_objs.append(new VMObject(vaddr_base, vaddr_base)); // aloca uma úniac página por enquanto
       
     }
 

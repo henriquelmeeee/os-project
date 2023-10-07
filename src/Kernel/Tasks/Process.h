@@ -211,17 +211,23 @@ class Process {
         if(current_phdr->p_type != _ELF_PT_LOAD)
           return;
         dbg("current_phdr->p_vaddr: %p", (void*)current_phdr->p_vaddr);
-        Region tmp = Region(this, current_phdr->p_vaddr);
+        Region tmp = Region(this, current_phdr->p_vaddr, 0x35A4E900); // 0x35A4E900 é um pADDR temporário enquanto não temos mmap()
         // Inicialmente iremos fazer apenas 1 página de alocação
         // para facilitar o map()
         // como temporariamente nós também usamos a mesma página física
         // para o p_vaddr
         // podemos usar ele de base para copiar os dados antes de mapear pro processo
-        char* src_addr = (char*)(__elf_binary->m_raw_data) + current_phdr->p_offset;
-        __builtin_memcpy((char*)current_phdr->p_vaddr, src_addr, current_phdr->p_filesz);
+        char* src_addr = ((char*)(__elf_binary->m_raw_data)) + current_phdr->p_offset;
+        dbg("__elf_binary->m_raw_data ptr: %p", (void*)__elf_binary->m_raw_data);
+        if((unsigned long)src_addr > 1000000000) {
+          dbg("src_addr invalido");
+          while(true);
+        }
+        ___memory_dump((void*)src_addr, 24);
+        __builtin_memcpy((char*)0x35A4E900, src_addr, current_phdr->p_filesz);
         tmp.map(); // mapeia para a área do processo
         m_regions.append(tmp);
-        ___memory_dump((void*)current_phdr->p_vaddr, 24);
+        ___memory_dump((void*)0x35A4E900, 24);
           });
       m_elf_image.for_each_program_header(phdr_callback);
       dbg("finalizado");
