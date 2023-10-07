@@ -70,17 +70,17 @@ void disable_irq(int irq) {
 
 #define fo (char)15
 
+#if 0
 alignas(4096) Memory::PML4Entry kPML4[512];
 alignas(4096) Memory::PDPTEntry kPDPT[512];
 alignas(4096) Memory::PDEntry kPD[512];
 alignas(4096) Memory::PTEntry kPT[512][512];
+#endif
 
-#if 0
 alignas(4096) u64 kPML4[512];
 alignas(4096) u64 kPDPT[512];
 alignas(4096) u64 kPD[512];
 alignas(4096) u64 kPT[512][512];
-#endif
 
 //Memory::PhysicalRegion physical_stack;
 //Memory::PhysicalRegion physical_heap;
@@ -158,6 +158,8 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   dbg("kmain()-> Kernel iniciando");
   char* txtaddr = (char*) 0xB8000;
 
+  system.change_to_kernel_addr_space();
+
   //if(!(system.init_idt())) {
     //throw_panic(0, "Failed to initialize IDT");
   //} 
@@ -166,6 +168,9 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
     throw_panic(0, "Failed to recreate pagination for Kernel");
   }
 #endif
+
+
+#if 0
 
   Memory::PML4Entry entry;
   
@@ -243,7 +248,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
       : "r" (kPML4)
       :"rax","memory"
       );
-
+#endif
   //physical_stack        = kmmap();
   //physical_heap         = kmmap();
   //physical_data         = kmmap();

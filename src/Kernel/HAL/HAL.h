@@ -18,17 +18,15 @@
 
 #define PORT (unsigned short)0x3f8 /* COM1 register, for control */
 
-#if 0
 extern u64 kPML4[512];
 extern u64 kPDPT[512];
 extern u64 kPD[512];
 extern u64 kPT[512][512];
-#endif
 
-extern Memory::PML4Entry kPML4[512];
-extern Memory::PDPTEntry kPDPT[512];
-extern Memory::PDEntry kPD[512];
-extern Memory::PTEntry kPT[512][512];
+//extern Memory::PML4Entry kPML4[512];
+//extern Memory::PDPTEntry kPDPT[512];
+//extern Memory::PDEntry kPD[512];
+//extern Memory::PTEntry kPT[512][512];
 
 
 #define KERNEL_START 10485760
@@ -214,58 +212,60 @@ namespace HAL {
         return true;
       }
 
+      bool m_kernel_addr_space_created = false;
+
       bool change_to_kernel_addr_space() {
-#if 0
-        for(int i = 0; i<512; i++) {
-          kPML4[i] = {0};
-          kPDPT[i] = {0};
-          kPD[i] = {0};
-        }
-
-        if(reinterpret_cast<u64>(kPDPT) % 4096 != 0){
-          throw_panic(0, "PDPT are not alligned");
-        }
-        if(reinterpret_cast<u64>(kPML4) % 4096 != 0) {
-          throw_panic(0, "PML4 are not alligned");
-        }
-        if(reinterpret_cast<u64>(kPD) % 4096 != 0) {
-          throw_panic(0, "PD are not alligned");
-        }
-        if(reinterpret_cast<u64>(kPT) % 4096 != 0) {
-          throw_panic(0, "PT are not alligned");
-        }
-
-        for(int pml4e = 0; pml4e<512; pml4e++) {
-          kPML4[pml4e] = ((reinterpret_cast<u64>(&(kPDPT[pml4e])) & ~0xFFF) | 0x3);
-        }
-
-        for(int pdpte = 0; pdpte<512; pdpte++) {
-          kPDPT[pdpte] = ((reinterpret_cast<u64>(&(kPD[pdpte])) & ~0xFFF) | 0x3);
-        }
-
-        int current_page = 0;
-        for(int pde = 0; pde<512; pde++) {
-          for(int pte = 0; pte<512; pte++) {
-            kPT[pde][pte] = (current_page * 4096) | 0x3;
-            current_page++;
+        if(!m_kernel_addr_space_created) {
+          for(int i = 0; i<512; i++) {
+            kPML4[i] = {0};
+            kPDPT[i] = {0};
+            kPD[i] = {0};
           }
-          kPD[pde] = ((reinterpret_cast<u64>(&(kPT[pde])) & ~0xFFF) | 0x3);
-        }
+
+          if(reinterpret_cast<u64>(kPDPT) % 4096 != 0){
+            throw_panic(0, "PDPT are not alligned");
+          }
+          if(reinterpret_cast<u64>(kPML4) % 4096 != 0) {
+            throw_panic(0, "PML4 are not alligned");
+          }
+          if(reinterpret_cast<u64>(kPD) % 4096 != 0) {
+            throw_panic(0, "PD are not alligned");
+          }
+          if(reinterpret_cast<u64>(kPT) % 4096 != 0) {
+            throw_panic(0, "PT are not alligned");
+          }
+
+          for(int pml4e = 0; pml4e<512; pml4e++) {
+            kPML4[pml4e] = ((reinterpret_cast<u64>(&(kPDPT[pml4e])) & ~0xFFF) | 0x3);
+          }
+
+          for(int pdpte = 0; pdpte<512; pdpte++) {
+            kPDPT[pdpte] = ((reinterpret_cast<u64>(&(kPD[pdpte])) & ~0xFFF) | 0x3);
+          }
+
+          int current_page = 0;
+          for(int pde = 0; pde<512; pde++) {
+            for(int pte = 0; pte<512; pte++) {
+              kPT[pde][pte] = (current_page * 4096) | 0x3;
+              current_page++;
+            }
+            kPD[pde] = ((reinterpret_cast<u64>(&(kPT[pde])) & ~0xFFF) | 0x3);
+          }
         
-        //ASSERT(kPT[0][0].flag_bits.present == 1,   -ENOPT,    "Failed to create PT");
-        //ASSERT(kPD[0].flag_bits.present    == 1,   -ENOPD,    "Failed to create PD");
-        //ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT,  "Failed to create PDPT");
-        //ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4,  "Failed to create PML4");
+          //ASSERT(kPT[0][0].flag_bits.present == 1,   -ENOPT,    "Failed to create PT");
+          //ASSERT(kPD[0].flag_bits.present    == 1,   -ENOPD,    "Failed to create PD");
+          //ASSERT(kPDPT[0].flag_bits.present  == 1,   -ENOPDPT,  "Failed to create PDPT");
+          //ASSERT(kPML4[0].flag_bits.present  == 1,   -ENOPML4,  "Failed to create PML4");
 
 
-        __asm__ volatile(
-            "mov %0, %%cr3;"
-            :
-            : "r" (kPML4)
-            : "rax", "memory"
-
-          );
-#endif
+          __asm__ volatile(
+              "mov %0, %%cr3;"
+              :
+              : "r" (kPML4)
+              : "rax", "memory"
+            );
+          m_kernel_addr_space_created = true;
+        }
         return true;
       }
 

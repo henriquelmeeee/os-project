@@ -233,7 +233,7 @@ bool itoh(long value, char* to_ret);
 #include "../kstd/stdio.h"
 
 void halt();
-extern Memory::PML4Entry kPML4[512];
+//extern Memory::PML4Entry kPML4[512];
 
 void change_page_table(void* pml4_address);
 
