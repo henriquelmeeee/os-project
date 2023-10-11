@@ -3,6 +3,8 @@
 #include "../kstd/stdlib.h"
 #include "../Utils/Base.h"
 
+#include "../Filesystem/Filesystem.h"
+
 struct Elf64_Ehdr {
   u8 e_ident[16];     // Identificador (magic number)
   u16 e_tpe;          // Por enquanto, aceitamos apenas executáveis
@@ -36,10 +38,11 @@ class ElfImage {
   private:
   public:
     Elf64_Ehdr* m_elf_header;
+    FILE* m_file;
     ElfImage() {}
-    ElfImage(void* binary){
+    ElfImage(FILE* elf_file) : m_file(elf_file){
       dbg("ElfImage criado");
-      m_elf_header = (Elf64_Ehdr*)binary;
+      m_elf_header = (Elf64_Ehdr*)(elf_file->m_raw_data);
       if(m_elf_header->e_ident[0] != _ELF_EI_MAGO) {
         throw_panic(0, "elf invalido");
       }
@@ -57,7 +60,7 @@ class ElfImage {
         current_phdr = (Elf64_Phdr*) (((char*)m_elf_header)+ph_offset);
         for(int i = 0; i<amount_of_program_headers; i++) {
           dbg("ElfImage::for_each_program_header: current_phdr->p_type: %d\nmemsz: %d", current_phdr->p_type, current_phdr->p_memsz);
-          callback(current_phdr, args...);
+          callback(current_phdr, m_file, args...);
           current_phdr = (Elf64_Phdr*) ((char*)current_phdr) + (m_elf_header->e_phentsize);
         }
         // Exemplo de uso:

@@ -52,8 +52,8 @@ FILE* FS::fopen(const char* path) {
       //__builtin_memcpy((char*)to_ret->m_raw_data, (char*)__raw_data, BLOCK_SIZE*12);
       FILE* to_ret = new FILE(__raw_data, "TODO name here");
       dbg("[FS::fopen()] [DEBUG] to_ret->m_raw_data: %p", (void*)to_ret->m_raw_data);
-      dbg("[FS::fopen()] [DEBUG] [BREAKPOINT] bug; Process::Tasks::for_each_program_header 'm_raw_data' are invalid");
-      while(true);
+      dbg("[FS::fopen()] [DEBUG] [WARN] bug; Process::Tasks::for_each_program_header 'm_raw_data' are invalid");
+      //while(true);
       //while(true); // temporário
       return to_ret;
     } else {

@@ -202,34 +202,26 @@ class Process {
     }
 
     Process(char* name, bool kernel_process = false, void* addr=0) : m_name(name) {
-      dbg("Processo %s criado", m_name);
-      // Ignore "addr" se kernel_process == false!
-      FILE* __elf_binary = g_fs->fopen("...");
-      m_elf_image = ElfImage((void*)__elf_binary->m_raw_data);
 
-      auto phdr_callback = MakeFunctor([&](Elf64_Phdr* current_phdr) {
-        if(current_phdr->p_type != _ELF_PT_LOAD)
+      FILE* binary = g_fs->fopen("...");
+      m_elf_image = ElfImage(binary);
+
+      auto __for_each_phdr = MakeFunctor([&](Elf64_Phdr* current_phdr, FILE* elf_binary) {
+
+        if(current_phdr->p_type != _ELF_PT_LOAD) {
           return;
-        dbg("current_phdr->p_vaddr: %p", (void*)current_phdr->p_vaddr);
-        Region tmp = Region(this, current_phdr->p_vaddr, 0x35A4E900); // 0x35A4E900 é um pADDR temporário enquanto não temos mmap()
-        // Inicialmente iremos fazer apenas 1 página de alocação
-        // para facilitar o map()
-        // como temporariamente nós também usamos a mesma página física
-        // para o p_vaddr
-        // podemos usar ele de base para copiar os dados antes de mapear pro processo
-        char* src_addr = ((char*)(__elf_binary->m_raw_data)) + current_phdr->p_offset;
-        dbg("__elf_binary->m_raw_data ptr: %p", (void*)__elf_binary->m_raw_data);
-        if((unsigned long)src_addr > 1000000000) {
-          dbg("src_addr invalido");
-          while(true);
         }
-        ___memory_dump((void*)src_addr, 24);
-        __builtin_memcpy((char*)0x35A4E900, src_addr, current_phdr->p_filesz);
-        tmp.map(); // mapeia para a área do processo
-        m_regions.append(tmp);
-        ___memory_dump((void*)0x35A4E900, 24);
-          });
-      m_elf_image.for_each_program_header(phdr_callback);
+        dbg("TODO bug __for_each_phdr 'elf_binary' é invalido, talvez algo relacionado a stack do functor?");
+
+        Region tmp = Region(this, current_phdr->p_vaddr, 0x35A4E900); // 0x35a4e900 é um pADDR fixo temporário enqnt n temos map()
+        char* src_addr = (char*) (((char*)elf_binary->m_raw_data) + current_phdr->p_offset);
+        dbg("binary->m_raw_data == %p", (void*)elf_binary->m_raw_data);
+        __builtin_memcpy((char*)0x35a4e900, src_addr, current_phdr->p_filesz);
+        return;
+      });
+
+      m_elf_image.for_each_program_header(__for_each_phdr);
+
       dbg("finalizado");
       while(true);
       return;
