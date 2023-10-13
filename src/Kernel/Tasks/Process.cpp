@@ -8,6 +8,45 @@
 #include "../Core/panic.h"
 #include "Process.h"
 #include "KernelTasks/KTasks.h"
+
+void Process::build_stack(void* stack_addr_base) {
+  m_regs.rsp = (u64)stack_addr_base;
+  m_regs.rsp+= 256;
+  
+  // Precisamos colocar 128 bytes de dados
+  // que são os conteúdos dos registradores gerais
+  // que são salvos por padrão na troca de contexto
+  // porém, se o processo na troca de contexto 
+  // nunca tiver sido executado antes,
+  // então ele não terá uma stack válida
+  // (não terá os registradores gerais nem o trap frame
+  //  do timer)
+  //  por isso, aqui simulamos tudo isso.
+  
+  *((u64*)(m_regs.rsp)) = 0xDEADBEEF; // apenas para testar o R15
+  m_regs.rsp+=(120);
+  *((u64*)(m_regs.rsp-16)) = m_regs.rsp; // RBP inicial
+  *((u64*)(m_regs.rsp-8)) = m_regs.rsp; // RSP inicial
+  
+  // Simulando trap frame (interrupt frame)
+  m_regs.rsp += 8; // FIXME isso é realmente necessário?
+
+  // TODO m_regs.rip deve corresponder ao entrypoint do ELF
+  *((u64*)m_regs.rsp) = (u64) m_regs.rip; // endereço inicial
+  m_regs.rsp+=8;
+  *((u64*)m_regs.rsp) = 0x08; // CS
+  m_regs.rsp+=8;
+  *((u64*)m_regs.rsp) = 0; // RFLAGS TODO
+  m_regs.rsp += 8;
+  *((u64*)m_regs.rsp) = 0xBEEFDEAD; // SS
+  m_regs.rsp += 8;
+  *((u64*)m_regs.rsp) = m_regs.rsp; // RSP
+  m_regs.rsp += 8; 
+
+  m_regs.rsp = (u64)stack_addr_base;
+}
+
+
 #if 0
 namespace Process{
 

@@ -95,10 +95,8 @@ class Process {
 
     Memory::Vector<Region> m_regions;
 
-    void initialize_stack(void* rip_addr, void* rsp_addr) {
-      // ...
-    }
-
+    void build_stack(void* stack_addr_base);
+#if 0
     void build_stack(void* addr) {
       m_regs.rsp = ((u64) kmalloc(1024)) + 512;
       u64 __init_rsp = m_regs.rsp;
@@ -195,13 +193,8 @@ class Process {
       return;
 #endif
     }
-
-    void kernel_routine_set(void* addr) {
-      m_regs.rip = (u64) addr;
-      return;
-    }
-
-    Process(char* name, bool kernel_process = false, void* addr=0) : m_name(name) {
+#endif
+    Process(char* name) : m_name(name) {
 
       FILE* binary = g_fs->fopen("...");
       m_elf_image = ElfImage(binary);
@@ -221,6 +214,11 @@ class Process {
       });
 
       m_elf_image.for_each_program_header(__for_each_phdr);
+
+      Region stack_region = Region();
+
+      build_stack( (void*) stack_region.base_addr_as_physical());
+
 
       dbg("finalizado");
       while(true);
