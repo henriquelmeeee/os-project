@@ -26,6 +26,55 @@ template<typename Lambda>
 Functor<Lambda> MakeFunctor(Lambda&& lambda) {
   return Functor<Lambda>(lambda);
 }
+
+namespace GenericSpinlock {
+  bool is_locked = false;
+  void lock() {
+    while(is_locked); // TODO tornar isso atômico
+    is_locked = true;
+  }
+  void unlock() {
+    is_locked = false;
+  }
+}
+
+namespace Spinlock {
+  enum LockType {
+    Disk,
+    Memory,
+    Global
+  };
+
+  bool is_disk_locked = false;
+  bool is_memory_locked = false;
+  bool is_global_locked = false;
+
+  void lock(LockType type = Global) {
+    if(type == Global) {
+      while(is_memory_locked || is_disk_locked || is_global_locked);
+      is_global_locked = true;
+      return;
+    } else if (type == Memory) {
+      while(is_global_locked || is_memory_locked);
+      is_memory_locked = true;
+      return;
+    } else if (type == Disk) {
+      while(is_global_locked || is_disk_locked);
+      is_disk_locked = true;
+      return;
+    }
+  }
+
+  void unlock(LockType type) {
+    if(type == Global)
+      is_global_locked = false;
+    else if (type == Memory)
+      is_memory_locked = false;
+    else if (type == Disk)
+      is_disk_locked = false;
+    return;
+  }
+} // namespace Spinlock
 #if 0
 void* operator new(unsigned long size) {
   void* to_ret = kmalloc(size);
