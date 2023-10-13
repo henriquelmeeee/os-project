@@ -257,9 +257,10 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   //g_kernel_procs[0] = (proc);
   dbg("kernel_process_test: %p", (void*)kernel_process_test);
   
-  Process proc = Process("teste", true, (void*)kernel_process_test);
+  Process proc = Process("teste");
   g_kernel_procs[0] = &proc;
   g_kernel_procs[1] = nullptr;
+  while(true);
   
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));

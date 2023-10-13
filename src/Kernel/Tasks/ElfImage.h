@@ -34,13 +34,15 @@ struct Elf64_Phdr {
   u64 p_align;
 } __attribute__((packed));
 
+class Process;
 class ElfImage {
   private:
   public:
     Elf64_Ehdr* m_elf_header;
     FILE* m_file;
+    Process* m_proc;
     ElfImage() {}
-    ElfImage(FILE* elf_file) : m_file(elf_file){
+    ElfImage(FILE* elf_file, Process* proc) : m_file(elf_file), m_proc(proc){
       dbg("ElfImage criado");
       m_elf_header = (Elf64_Ehdr*)(elf_file->m_raw_data);
       if(m_elf_header->e_ident[0] != _ELF_EI_MAGO) {
@@ -60,7 +62,7 @@ class ElfImage {
         current_phdr = (Elf64_Phdr*) (((char*)m_elf_header)+ph_offset);
         for(int i = 0; i<amount_of_program_headers; i++) {
           dbg("ElfImage::for_each_program_header: current_phdr->p_type: %d\nmemsz: %d", current_phdr->p_type, current_phdr->p_memsz);
-          callback(current_phdr, m_file, args...);
+          callback(current_phdr, m_file, m_proc, args...);
           current_phdr = (Elf64_Phdr*) ((char*)current_phdr) + (m_elf_header->e_phentsize);
         }
         // Exemplo de uso:

@@ -46,8 +46,32 @@ void Process::build_stack(void* stack_addr_base) {
   m_regs.rsp = (u64)stack_addr_base;
 }
 
+Process::Process(char* name) : m_name(name) {
+  FILE* binary = g_fs->fopen("...");
+  m_elf_image = ElfImage(binary, this);
 
-#if 0
+  auto __for_each_phdr = MakeFunctor([&](Elf64_Phdr* current_phdr, FILE* elf_binary, Process* current_proc) {
+    if(current_phdr->p_type != _ELF_PT_LOAD)
+      return;
+
+    dbg("TODO bug __for_each_phdr elf_binary->m_raw_data é inválido, talvez algo relacionado à stack do functor?");
+
+    Region tmp = Region(current_proc, current_phdr->p_vaddr, 0x35A4E900); // é um paddr fixo temporario enqnt n temos mmap()
+    char* src_addr = (char*) (((char*)elf_binary->m_raw_data)) + current_phdr->p_offset;
+    dbg("binary->m_raw_data: %p", elf_binary->m_raw_data);
+
+    __builtin_memcpy((char*)0x35a4e900, src_addr, current_phdr->p_filesz);
+  });
+  
+  m_elf_image.for_each_program_header(__for_each_phdr);
+
+  Region stack_region = Region(this, 0);
+  build_stack((void*)stack_region.base_addr_as_physical());
+
+  dbg("finalizado process::process()");
+  while(true);
+}
+#if 0  
 namespace Process{
 
   #define vPage i16
