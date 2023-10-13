@@ -215,7 +215,7 @@ class Process {
 
       m_elf_image.for_each_program_header(__for_each_phdr);
 
-      Region stack_region = Region();
+      Region stack_region = Region(this, 0);
 
       build_stack( (void*) stack_region.base_addr_as_physical());
 
@@ -223,36 +223,6 @@ class Process {
       dbg("finalizado");
       while(true);
       return;
-      // Inicialmente, precisamos criar as regiões para o código e a stack
-      // Essas regiões conterão uma lista de VMObjects
-      // e o mapeamento para a memória física ocorrerá de forma transparente
-      // A página virtual 500 do processo é onde a região de código começa
-      // Já a página virtual 600 é onde a stack começa, em direção ao código
-      // esse é um layout temporário.
-      
-      //build_stack(addr);
-      //return;
-      Region code_region      = Region(this, 0);
-      Region stack_region     = Region(this, 0);
-
-      // TODO precisamos carregar o binário do filesystem
-      // e pegar tudo dele e colocar em diferentes páginas VMObject
-      
-      // temporariamente hard-coded
-
-      short raw_data_test[] = {0x90, 0x90, 0x90, 0x90};
-      VMObject* current_code_page = (VMObject*) kmalloc(sizeof(VMObject)); // TODO operador new()
-      current_code_page->m_virtual_page = 500;
-      current_code_page->m_physical_page = 600;
-      // TODO memset() para a m_physical_page baseado em raw_data_test
-      if(!current_code_page->map(this)) {
-        throw_panic(0, "current_code_page->map(this) falhou");
-      }
-
-      m_regions.append(code_region);
-
-      m_regions.append(stack_region);
-      m_kernel_process = kernel_process;
 
 #if 0
       // Agora, precisamos configurar o TSS: (ainda não é usada)

@@ -85,8 +85,13 @@ class Region {
       if(paddr_base != 0)
         m_vm_objs.append(new VMObject(vaddr_base, paddr_base));
       else
-        m_vm_objs.append(new VMObject(vaddr_base, vaddr_base)); // aloca uma úniac página por enquanto
+        m_vm_objs.append(new VMObject(vaddr_base, vaddr_base)); // aloca uma única página por enquanto
+      // TODO mmap() caso paddr_base == 0
       
+    }
+
+    u64 base_addr_as_physical() {
+      return m_vm_objs[0]->m_physical_page * PAGE_SIZE;
     }
 
     bool map();
