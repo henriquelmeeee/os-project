@@ -60,3 +60,26 @@ bool Region::map() {
     m_vm_objs[i]->map(m_process);
   return true;
 }
+
+struct PhysicalPagesBitmap {
+  u64 bits[16]; // 1024 páginas
+                // começando em 0x40000000
+} PhysicalPagesBitmap = {0};
+
+u64 kmmap(u64 virtual_page) {
+  // TODO lock
+  for(int i = 0; i<16; i++) {
+    for(int bit = 0; bit < 64; ++bit) {
+      bool bitValue = (PhysicalPagesBitmap.bits[i] >> bit) & 1;
+      if(!bitValue) {
+        PhysicalPagesBitmap.bits[i] |= (1ULL << bit);
+        return ((i * 64 + bit) * PAGE_SIZE) + (0x40000000);
+      }
+    }
+  }
+  return 0;
+}
+
+bool kunmap(u64 physical_page) {
+  
+}

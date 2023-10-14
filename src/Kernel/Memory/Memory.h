@@ -97,4 +97,7 @@ class Region {
     bool map();
 };
 
+u64 kmmap(u64);
+bool kunmap(u64);
+
 #endif

@@ -15,16 +15,10 @@
 #include "../Syscalls/Syscall.h"
 
 #include "Devices/PIC.h"
+#include "../Core/API/Preload.h"
+#include "../Processor.h"
 
 #define PORT (unsigned short)0x3f8 /* COM1 register, for control */
-
-#define BIOS_ENTRY 0xE0000
-#define BIOS_END 0xFFFFF
-
-#define IA32_APIC_BASE 0x1B           
-#define IA32_TSC 0x10                 // Timestamp counter
-#define IA32_EFER (0xC00000080)      
-#define IA32_VMX_BASIC 0x480          // Informações de virtualização
 
 extern u64 kPML4[512];
 extern u64 kPDPT[512];
@@ -141,6 +135,9 @@ class ACPI {
 
         if(kstrncmp(__madt->signature, "APIC", 4) == 0) {
           __builtin_memcpy((char*)__madt, (char*)&(this->madt), sizeof(MADT));
+          dbg("HAL: MADT encontrada");
+          processor->m_local_apic_addr = madt.local_controller_addr;
+          break;
         }
       }
       return available;

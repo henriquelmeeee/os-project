@@ -59,6 +59,9 @@ class Processor {
   public:
     u32 m_identifier;
 
+    u64 m_local_apic_addr;
+
+
     Processor(u32 identifier) \
       : m_identifier(identifier) {}
     

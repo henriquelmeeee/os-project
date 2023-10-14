@@ -26,8 +26,6 @@ struct PhysicalRegion {
 
 extern PhysicalRegion regions[512];
 
-PhysicalRegion kmmap(u64 size=512);
-
 class Arena;
 
 struct ArenaHeader {
@@ -52,7 +50,7 @@ class Arena {
   public:
     ArenaHeader m_header = {};
     Arena() {
-      m_header.region = kmmap();
+      //m_header.region = PhysicalRegion(kmmap());
       dbg("Kernel: Heap: Created new arena @ %p\n", &m_header.region);
       m_header.size = m_header.region.end_address - m_header.region.start_address;
       m_header.next = nullptr;
