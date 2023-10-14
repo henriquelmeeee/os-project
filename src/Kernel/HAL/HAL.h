@@ -18,6 +18,14 @@
 
 #define PORT (unsigned short)0x3f8 /* COM1 register, for control */
 
+#define BIOS_ENTRY 0xE0000
+#define BIOS_END 0xFFFFF
+
+#define IA32_APIC_BASE 0x1B           
+#define IA32_TSC 0x10                 // Timestamp counter
+#define IA32_EFER (0xC00000080)      
+#define IA32_VMX_BASIC 0x480          // Informações de virtualização
+
 extern u64 kPML4[512];
 extern u64 kPDPT[512];
 extern u64 kPD[512];
@@ -43,7 +51,7 @@ extern u64 kPT[512][512];
     u64 xsdt_addr;
     u8 extended_checksum;
     u8 reserved[3];
-  };
+  } __attribute__((packed));
 
   struct ACPI_STD_HEADER {
     char signature[4];
@@ -55,23 +63,34 @@ extern u64 kPT[512][512];
     u32 oem_revision;
     u32 creator_id;
     u32 creator_revision;
-  };
+  } __attribute__((packed));
 
   struct RSDT {
     ACPI_STD_HEADER header;
     u32 entry[1]; // all of tables in system; check "header length"
-  };
+  } __attribute__((packed));
 
   struct FADT{};
-  struct MADT{};
+  struct MADT {
+    char signature[4];
+    u32 length;
+    u8 revision;
+    u8 checksum;
+    char oem_id[6];
+    char oem_table_id[8];
+    u32 oem_revision;
+    u32 creator_id;
+    u32 creator_revision;
+    u32 local_controller_addr; // Endereço físico do LAPIC!
+    u32 flags;
+  } __attribute__((packed));
   struct SSDT{};
   struct DSDT{};
   struct SBST{};
   struct ECDT{};
 
 
-#define BIOS_ENTRY 0xE0000
-#define BIOS_END 0xFFFFF
+
 
 class ACPI {
   private:
@@ -93,7 +112,6 @@ class ACPI {
     ACPI() {}
 
     bool enable() {
-
       for(char* i = (char*) BIOS_ENTRY; (unsigned long)i<BIOS_END; i+=16) {
         if(!kstrncmp(i, "RSD PTR ", 8)) {
           Text::Writeln("HAL: ACPI: Found Root System Descriptor", 0xe);
@@ -112,15 +130,19 @@ class ACPI {
           }
           //rsdt.header = _buf->header; FIXME why panic?
           rsdt_entries = rsdt.header.length - sizeof(ACPI_STD_HEADER)/4;
-
-
-          
-
           available=true;
           break;
         }
       }
-      
+      int entries = ((rsdt.header.length - sizeof(RSDT))) / 4;
+      for(int i = 0; i<entries; ++i) {
+        u32 entry_addr = rsdt.entry[i];
+        MADT* __madt = (MADT*) entry_addr;
+
+        if(kstrncmp(__madt->signature, "APIC", 4) == 0) {
+          __builtin_memcpy((char*)__madt, (char*)&(this->madt), sizeof(MADT));
+        }
+      }
       return available;
     }
 };
@@ -138,26 +160,8 @@ namespace HAL {
         Text::Writeln("HAL: Looking for system information...", 0xe);
         this->TOTAL_RAM = 2 GB;
         unsigned long long TOTAL_RAM_BUFFER = this->TOTAL_RAM;
-        char buffer[32];
-        Text::Write("HAL: ", 0xe);
-        
 
-        if(TOTAL_RAM_BUFFER < 1024) {
-          itos(TOTAL_RAM_BUFFER, buffer);
-          Text::Write(buffer);
-          Text::Write("B");
-        } else if ((TOTAL_RAM_BUFFER >= 1024) && (TOTAL_RAM_BUFFER < 1000000)) {
-          itos(TOTAL_RAM_BUFFER / 1024, buffer);
-          Text::Write(buffer);
-          Text::Write("KB");
-        } else {
-          itos(TOTAL_RAM_BUFFER / 1000000, buffer);
-          Text::Write(buffer);
-          Text::Write("MB");
-        }
-        Text::Writeln(" of RAM found", 0xe);
-
-        Text::Writeln("HAL: Now trying to initialize ACPI", 0xe);
+        Text::Writeln("HAL: Initializing ACPI", 0xe);
         acpi.enable();
         this->pic = PIC();
       }
@@ -265,6 +269,8 @@ namespace HAL {
               : "rax", "memory"
             );
           m_kernel_addr_space_created = true;
+        } else {
+          // TODO mudar c0 apenas
         }
         return true;
       }

@@ -27,6 +27,7 @@ Functor<Lambda> MakeFunctor(Lambda&& lambda) {
   return Functor<Lambda>(lambda);
 }
 
+#if 0
 namespace GenericSpinlock {
   bool is_locked = false;
   void lock() {
@@ -75,6 +76,11 @@ namespace Spinlock {
     return;
   }
 } // namespace Spinlock
+#endif
+
+
+
+
 #if 0
 void* operator new(unsigned long size) {
   void* to_ret = kmalloc(size);

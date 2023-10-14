@@ -86,35 +86,7 @@ alignas(4096) u64 kPT[512][512];
 //Memory::PhysicalRegion physical_heap;
 //Memory::PhysicalRegion physical_data;
 
-volatile void kernel_process_test() {
-  STI;
-  dbg("Kernel process 1 here!");
-  while(true);
-_label:
-  STI;
-  goto _label;
-#if 0
-_label:
-  kprintf("kernel process!");
-  for(int i = 0; i<99999999; i++);
-  goto _label;
-#endif
-}
-
-volatile void kernel_process_test2() {
-  STI;
-  dbg("Kernel process 2 here!");
-  __asm__ volatile("int $3");
-  while(true);
-_label2:
-  STI;
-  goto _label2;
-#if 0
-  kprintf("another kernel process!");
-  for(int i = 0; i<99999999; i++);
-  goto _label2;
-#endif
-}
+Processor* processor = new Processor(0);
 
 Memory::Vector<Process> g_procs; //= Memory::Vector<Process>();
 Memory::Vector<Process*> g_kernel_procs; // = Memory::Vector<Process>();
@@ -255,7 +227,6 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   system.pic.append_idt((u64) timer_isr, 32);
   g_kernel_procs = Memory::Vector<Process*>();
   //g_kernel_procs[0] = (proc);
-  dbg("kernel_process_test: %p", (void*)kernel_process_test);
   
   Process proc = Process("teste");
   g_kernel_procs[0] = &proc;
