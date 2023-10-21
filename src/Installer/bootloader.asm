@@ -36,7 +36,7 @@ print_error_and_hlt:
     je done
     int 0x10
     inc di
-    mov al, [msg+di]
+    mov al, byte [msg+di]
     jmp next_char
   done:
     hlt
