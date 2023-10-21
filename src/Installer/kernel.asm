@@ -1,8 +1,6 @@
 [org 0x1000]
 [bits 16]
 
-
-
 jmp main
 video_addr equ 0xB8000
 position resb 1
