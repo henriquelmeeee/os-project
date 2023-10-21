@@ -10,3 +10,4 @@ src/Kernel/prekernel.asm
 Build/*
 src/Build/*
 src/Kernel/tmp/*
+src/Installer/Build/os.img
