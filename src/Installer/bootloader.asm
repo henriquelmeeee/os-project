@@ -6,8 +6,8 @@ jmp main
 main:
 ; "cs" starts with "0x07c0"
   cli
-  mov ax, 0x07c0
-  mov ds, ax
+  ;mov ax, 0x07c0
+  ;mov ds, ax
 
   mov ax, 0x1000
   mov es, ax
@@ -28,18 +28,14 @@ main:
   jmp print_error_and_hlt
 
 print_error_and_hlt:
+  lodsb
+  or al, al
+  jmp done
   mov ah, 0x0e
-  mov al, byte [si]
-  mov bh, 0
-  mov bl, 7
-
-  next_char:
-    cmp al, 0
-    je done
-    int 0x10
-    inc di
-    mov al, byte [msg+di]
-    jmp next_char
+  mov bh, 0x00
+  mov bl, 0x07
+  int 0x10
+  jmp print_error_and_hlt
   done:
     hlt
   
