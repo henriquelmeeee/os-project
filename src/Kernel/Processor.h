@@ -3,7 +3,7 @@
 #ifndef PROCESSOR
 #define PROCESSOR
 
-#include "Memory/Base_Mem.h"
+//#include "Memory/Base_Mem.h"
 
 #if 0
 enum DeviceType {
@@ -39,7 +39,6 @@ class Keyboard : public PS2 {
 
     Keyboard() {}
 };
-#endif
 
 #include "Utils/Base.h"
 
@@ -67,4 +66,5 @@ class Processor {
     
 } extern *processor;
 
+#endif
 #endif

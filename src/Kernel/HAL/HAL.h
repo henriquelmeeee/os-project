@@ -13,8 +13,6 @@
 #include "Devices/APIC.h"
 #include "Devices/Processor.h"
 
-
-
 extern u64 kPML4[512];
 extern u64 kPDPT[512];
 extern u64 kPD[512];
@@ -60,6 +58,7 @@ namespace HAL {
       void write_cr3(u64 value);
       u64 read_cr3();
 
+      bool init_serial_for_dbg() {return false;} // TODO
 
   };
 }

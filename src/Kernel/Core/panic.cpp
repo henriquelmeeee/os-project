@@ -35,7 +35,7 @@ outw(0x3D4, 0xE317); // Text-Mode Blinking
   write("Fatal: Kernel panic!", 0x4);
   newline;
   write(msg);
-  system.dump_stack();
+  //system.dump_stack();
   //itos(Process::amount_of_procs, buffer);
   //write(buffer);
   //write(" tasks");
