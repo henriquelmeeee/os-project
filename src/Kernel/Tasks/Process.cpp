@@ -53,14 +53,15 @@ Process::Process(char* name) : m_name(name) {
   auto __for_each_phdr = MakeFunctor([&](Elf64_Phdr* current_phdr, FILE* elf_binary, Process* current_proc) {
     if(current_phdr->p_type != _ELF_PT_LOAD)
       return;
-
-    dbg("TODO bug __for_each_phdr elf_binary->m_raw_data é inválido, talvez algo relacionado à stack do functor?");
-
+    dbg("[(functor) Process::__for_each_phdr()] PHDR v_addr: %p", current_phdr->p_vaddr);
+    dbg("elf_binary->m_raw_data ANTES do region tmp:: %p", elf_binary->m_raw_data);
+    
     Region tmp = Region(current_proc, current_phdr->p_vaddr, 0x35A4E900); // é um paddr fixo temporario enqnt n temos mmap()
+    dbg("elf_binary->m_raw_data DEPOIS do region tmp: %p", elf_binary->m_raw_data); // FIXME corrupção de ptr m_raw_data aqui
     char* src_addr = (char*) (((char*)elf_binary->m_raw_data)) + current_phdr->p_offset;
-    dbg("binary->m_raw_data: %p", elf_binary->m_raw_data);
 
     __builtin_memcpy((char*)0x35a4e900, src_addr, current_phdr->p_filesz);
+    ___memory_dump(src_addr);
   });
   
   m_elf_image.for_each_program_header(__for_each_phdr);

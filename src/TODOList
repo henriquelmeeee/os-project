@@ -1,4 +1,5 @@
-TODO: Processor.h can be transfered to HAL/HAL.h
+TODO: Processor.h can be transfered to HAL/HAL.h (already started)
 TODO: Utils/* will be transfered to kstd/
 
 TODO FIX: system->dump_stack() not working (symbols)
+TODO FIX: elf binary (m_raw_data) pointer corruption in Tasks/Process.cpp

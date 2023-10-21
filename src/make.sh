@@ -61,8 +61,8 @@ ld -nostdlib -static -T Core/KernelLinker.ld bin/tmp/kernel.o bin/tmp/heap.o bin
 
 echo "Compilando shell"
 
-g++ -m64 -ffreestanding -fno-exceptions -fno-rtti -c Base/files/Shell.cpp -o bin/tmp/shell.o
-ld -nostdlib -static -T Base/files/linker.ld bin/tmp/shell.o -o bin/shell.bin
+#g++ -m64 -ffreestanding -fno-exceptions -fno-rtti -c Base/files/Shell.cpp -o bin/tmp/shell.o
+#ld -nostdlib -static -T Base/files/linker.ld bin/tmp/shell.o -o bin/shell.bin
 
 #dd if=/dev/zero of=../Build/disk.img bs=1M count=50
 
