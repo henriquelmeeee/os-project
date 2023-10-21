@@ -19,5 +19,6 @@ dd if=bin/kernel.bin of=Build/os.img bs=512 seek=1 conv=notrunc # setor 2
 rm tmp.bootloader.asm
 rm tmp.kernel.asm
 
+sleep 1
 qemu-system-i386 -drive format=raw,file=Build/os.img -d in_asm
 

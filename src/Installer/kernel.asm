@@ -1,6 +1,8 @@
 [org 0x1000]
 [bits 16]
 
+
+
 jmp main
 video_addr equ 0xB8000
 position resb 1
@@ -52,7 +54,7 @@ kprint:
   mov bl, 7 ; cinza sobre preto
 
   next_char:
-    mov al, [si]
+    mov al, byte [si]
     test al, al
     jz done
 

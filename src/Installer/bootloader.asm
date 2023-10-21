@@ -4,16 +4,27 @@
 jmp main
 
 main:
+; "cs" starts with "0x07c0"
   cli
+  cld
   mov ax, 0x1000 ; Endereço do kernel
-  mov es, ax
-  xor bx, bx
+  ;mov es, ax
+  xor ax, ax
+  mov bx, ax
+  mov ax, 0x07c0
+  mov fs, ax
+  mov gs, ax
+  mov ss, ax
+  mov sp, 0x9C00
+  xor ax, ax
+  mov ds, ax
 
   mov ah, 0x02
   mov al, SECTORS_KERNEL
   mov ch, 0
   mov cl, 2 ; setor inicial
   mov dh, 0
+  mov dl, 0x80
   int 0x13
 
   mov ax, 0x1000
