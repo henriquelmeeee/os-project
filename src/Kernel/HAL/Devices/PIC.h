@@ -30,8 +30,11 @@ class PIC {
 
   public:
     PIC() {
-      kprintf("PIC: Initializing...");
+    }
+
+    bool initialize() {
       __initialize_idt();
+      return true;
     }
 
     bool append_idt(u64 addr, u32 offset, u32 flags = 0x8E) {
