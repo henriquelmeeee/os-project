@@ -1,6 +1,6 @@
 # Variáveis de compilação
 CC = g++
-CFLAGS = -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti
+CFLAGS = -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mno-sse -mno-sse2 -mno-sse3 -mno-mmx -mno-3dnow -msoft-float
 ASM = nasm
 ASMFLAGS = -f elf64
 LD = ld
@@ -10,7 +10,7 @@ OBJ = $(BIN)/tmp
 KERNEL_LOCATION = 10485760
 
 # Arquivos
-C_SRC = $(wildcard *.cpp Memory/*.cpp Core/*.cpp Drivers/*.cpp Interruptions/*.cpp Syscalls/*.cpp Tasks/*.cpp Utils/*.cpp Filesystem/*.cpp)
+C_SRC = $(shell find . -type f -name '*.cpp')
 ASM_SRC = $(wildcard Interruptions/*.asm Syscalls/*.asm)
 OBJ_FILES = $(patsubst %.cpp,$(OBJ)/%.o,$(C_SRC)) $(patsubst %.asm,$(OBJ)/%.o,$(ASM_SRC))
 

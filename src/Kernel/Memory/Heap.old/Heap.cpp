@@ -1,3 +1,4 @@
+#if 0
 #include "../../Utils/Base.h"
 #include "../../Core/panic.h"
 #include "../../HAL/HAL.h"
@@ -92,3 +93,4 @@ bool kfree(void* chunk_addr) {
     return true;
   }
 }
+#endif

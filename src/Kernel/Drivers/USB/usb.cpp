@@ -1,5 +1,5 @@
 #define CONTROLLER_REGISTER_PORT 0x64
-
+#if 0
 struct USBDeviceDescriptor {
   unsigned int bLenght; // tamanho em bytes do descritor
 };
@@ -32,3 +32,4 @@ namespace Drivers::USB {
 
   }
 }
+#endif

@@ -1,5 +1,5 @@
 #include "../Utils/Base.h"
-
+#if 0
 extern "C" __attribute__((interrupt)) void i_fpuerr(u64 *teste) {
   CLI;
   dbg("a");
@@ -36,3 +36,4 @@ extern "C" __attribute__((interrupt)) void i_fpuerr(u64 *teste) {
       :"%rax","cc","memory","%rbp","%rsp","%rbx" 
       );
 }
+#endif
