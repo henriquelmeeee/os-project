@@ -7,6 +7,12 @@ position resb 1
 
 %define LINE dh
 %define COLUMN dl
+%macro WAIT_FOR_INPUT 0
+  push ax
+  mov ah, 0
+  int 0x16
+  pop ax
+%endmacro
 
 main:
   mov ax, cs
@@ -88,6 +94,7 @@ start_installer:
   mov bp, sp
   
   call wait_for_any_key
+  call check_first_disk_is_connected
   call display_installer_options
 
   hlt
@@ -101,8 +108,7 @@ wait_for_any_key:
   mov si, press_any_key
   call kprint
 
-  mov ah, 0
-  int 0x16 ; espera por tecla
+  WAIT_FOR_INPUT
 
   ret
 
@@ -115,7 +121,34 @@ display_installer_options:
   pop bp
   ret
 
+check_first_disk_is_connected:
+  pusha
+  mov ah, 0x41
+  mov bx, 0x55aa
+  mov dl, 0x80
+  int 0x13
+
+  cmp bx, 0xaa55
+  jnz no_drive_error
+  popa
+  ret
+
+
+
+
+; Errors
+
+no_drive_error:
+  call configure_video
+  mov si, no_drive
+  call kprint
+
+  hlt
+  jmp $
+
+
 press_any_key db "Press any key to start the installation...", 0
+no_drive db "Fatal: No disks found", 0
 installer_options db "", 0
 
 times 512-($-$$) db 0
