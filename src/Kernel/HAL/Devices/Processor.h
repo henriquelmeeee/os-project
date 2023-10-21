@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef __PROCESSOR
+#define __PROCESSOR
+
 #include "../../Utils/Base.h"
 
 class Processor {
@@ -12,12 +15,8 @@ class Processor {
 
     }
 
-
-
-
 };
 
-Processor* current_processor() {
-  //return system->bsp; // TODO refazer função quando formos suportar multiprocessadores
-  return nullptr;
-}
+Processor* current_processor();
+
+#endif

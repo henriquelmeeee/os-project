@@ -84,4 +84,14 @@ bool System::change_to_kernel_addr_space() {
   }
 }
 
+void System::write_cr3(u64 value) {
+  dbg("[System::write_cr3()] TODO");
+  while(true);
+}
+
+u64 read_cr3() {
+  dbg("System::read_cr3() TODO");
+  while(true);
+}
+
 } // namespace HAL 
