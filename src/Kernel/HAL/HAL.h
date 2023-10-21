@@ -5,7 +5,7 @@
 #include "../Drivers/VIDEO/preload.h"
 
 #include "../Interruptions/preload.h"
-#include "../Cores/Debugging/Symbols.h"
+//#include "../../Cores/Debugging/Symbols.h"
 #include "../Drivers/Keyboard.h"
 #include "../Syscalls/Syscall.h"
 
@@ -24,6 +24,9 @@ extern u64 kPT[512][512];
 
 namespace HAL {
   class System {
+    private:
+      bool kernel_pagination_already_created = false;
+      void* __kernel_pml4 = nullptr;
     public:
       PIC pic = {};
       APIC apic = {};
