@@ -14,6 +14,9 @@ position resb 1
   pop ax
 %endmacro
 
+%define MID_LINE 11
+%define MID_COLUMN 33
+
 main:
   mov ax, cs
   mov ds, ax
@@ -94,8 +97,8 @@ start_installer:
   mov bp, sp
   
   call wait_for_any_key
-  call check_first_disk_is_connected
-  call display_installer_options
+  call enumerate_disks
+  call display_disk_options
 
   hlt
   pop bp
@@ -112,26 +115,73 @@ wait_for_any_key:
 
   ret
 
-display_installer_options:
+display_disk_options:
   push bp
   mov bp, sp
   
   call configure_video
 
+  ; First disk
+  mov LINE, (MID_LINE - 1)
+  mov COLUMN, MID_COLUMN
+  call set_video
+  mov si, first_disk_option
+  call kprint
+
+  mov ax, bool_second_disk_exists
+  jnz second_disk_print
+  jz wait_for_disk_option
+
+  second_disk_print:
+    mov LINE, (MID_LINE)
+    mov COLUMN, MID_COLUMN
+    call set_video
+    mov si, second_disk_option
+    call kprint
+
+    mov ax, bool_third_disk_exists
+    jnz third_disk_print
+    jz wait_for_disk_option
+
+  third_disk_print:
+    mov LINE, (MID_LINE + 1)
+    mov COLUMN, MID_COLUMN
+    call set_video
+    mov si, third_disk_option
+    call kprint
+
+  wait_for_disk_option:
+    hlt
+
   pop bp
   ret
 
-check_first_disk_is_connected:
+enumerate_disks:
   pusha
   mov ah, 0x41
-  mov bx, 0x55aa
   mov dl, 0x80
   int 0x13
+  jc no_drive_error
 
-  cmp bx, 0xaa55
-  jnz no_drive_error
-  popa
-  ret
+  mov ah, 0x41
+  mov dl, 0x81
+  int 0x13
+  jc enumerate_disks_end
+
+  mov al, 1
+  mov [bool_second_disk_exists], al
+
+  mov ah, 0x41
+  mov dl, 0x82
+  int 0x13
+  jc enumerate_disks_end
+
+  mov al, 1
+  mov [bool_third_disk_exists], al
+
+  enumerate_disks_end:
+    popa
+    ret
 
 
 
@@ -146,9 +196,16 @@ no_drive_error:
   hlt
   jmp $
 
-
 press_any_key db "Press any key to start the installation...", 0
 no_drive db "Fatal: No disks found", 0
 installer_options db "", 0
+
+first_disk_option db "1. Disk 0", 0
+second_disk_option db "2. Disk 1", 0
+third_disk_option db "3. Disk 2", 0
+bool_second_disk_exists db 0
+bool_third_disk_exists db 0
+
+current_disk_choice db 0
 
 times 512-($-$$) db 0

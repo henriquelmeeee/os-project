@@ -19,6 +19,9 @@ dd if=bin/kernel.bin of=Build/os.img bs=512 seek=1 conv=notrunc # setor 2
 rm tmp.bootloader.asm
 rm tmp.kernel.asm
 
+qemu-img create -f qcow2 disco_adicional.qcow2 10M
+
 sleep 1
-qemu-system-i386 -drive format=raw,file=Build/os.img -d in_asm
+echo "Iniciando QEMU"
+qemu-system-i386 -drive format=raw,file=Build/os.img -drive file=disco_adicional.qcow2,format=qcow2 #-d in_asm
 
