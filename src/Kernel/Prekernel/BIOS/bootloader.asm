@@ -68,6 +68,7 @@ start:
   or eax, 1
   mov cr0, eax
 [bits 32]
+hlt
   db 0x66
   jmp CODE_SELECTOR:start_protected_mode
 
