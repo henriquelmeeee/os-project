@@ -73,7 +73,22 @@ second_timer_isr:
 ; depois que o timer vai na segunda vez,
 ; parece haver alguma inconsistência
 __debug:
+sub rsp, 8
   pop rax ; deve ser rflags
   pop rdi ; deve ser cs
   pop rsi ; deve ser rip
+  int 3
+  ; mas como não é...
+  ; gambiarra! (parece que ele tá salvando RSP e SS mesmo sem troca de privilégio)
+  sub rsp, (8+8+8)
+  pop rsp
+  add rsp, 8 ; ignora o SS
+
+  ; agora sim: rflags, cs, rip.
+
+  pop rax
+  pop rdi
+  pop rsi
+  int 3
+
   int 3
