@@ -11,7 +11,9 @@
 
 void teste_func() {
   kprintf("se vc esta lendo isso, entao a troca de contexto funcionou.");
-  while(true);
+  for(int i = 0; i<99999; i++) {
+    dbg("gozei");
+  }
 }
 
 void Process::build_stack(void* stack_addr_base) {

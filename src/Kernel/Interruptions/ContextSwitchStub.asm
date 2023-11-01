@@ -72,23 +72,21 @@ second_timer_isr:
 ; FIXME
 ; depois que o timer vai na segunda vez,
 ; parece haver alguma inconsistência
+; talvez seja pq to salvando o RFLAGS sempre como ZERO no build_stack
 __debug:
-sub rsp, 8
-  pop rax ; deve ser rflags
-  pop rdi ; deve ser cs
-  pop rsi ; deve ser rip
-  int 3
-  ; mas como não é...
-  ; gambiarra! (parece que ele tá salvando RSP e SS mesmo sem troca de privilégio)
-  sub rsp, (8+8+8)
-  pop rsp
-  add rsp, 8 ; ignora o SS
+; o pop rbp de cima tá pegando o CS
+; e os outros também (????)
+  ;pop rax ; deve ser rflags; seu valor atualmente é 0
+  ;pop rdi ; deve ser cs; seu valor atualmente é o RIP
+  ;pop rsi ; deve ser rip; seu valaor atualmente é  0
+  ;pop rbx ; valor 0
+  ;pop rbp ; valor 0 também
+  ; ou seja, estamos f*didos porque a interrupção não tá salvando certo
+  ; então, vou apenas ir com o RIP e ignorar CS e RFLAGS por enquanto
+  ; btw eu acho que o problema aqui tá na forma como eu salvo m_regs.rsp
+  pop r13 ; meh
+  pop r13 ; rip!
+  pop r14 ; apenas ignorar
+  sti
+  jmp r13
 
-  ; agora sim: rflags, cs, rip.
-
-  pop rax
-  pop rdi
-  pop rsi
-  int 3
-
-  int 3
