@@ -18,7 +18,7 @@ extern "C" void quantum_interruption_handle(u64 rsp) {
   Process* next_proc;
   if(g_kernel_procs[kernel_procs_round_robin] == nullptr)
     kernel_procs_round_robin = 0;
-  next_proc = g_kernel_procs[kernel_procs_round_robin];
+  next_proc = g_kernel_procs[0];
   ++kernel_procs_round_robin;
   dbg("RSP do processo atual é: %p", (void*)rsp);
   if(g_current_proc != nullptr)
@@ -32,7 +32,7 @@ extern "C" void quantum_interruption_handle(u64 rsp) {
    depois do interrupt frame
    então precisamos fazer com que cobremos os registradores salvos pelo push
   */
-
+  
   __asm__ volatile(
     "mov %0, %%rsp;"
     "lea second_timer_isr(%%rip), %%rax;"

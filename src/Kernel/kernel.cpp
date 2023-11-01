@@ -174,7 +174,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   kprintf(" ");
   kprintf("Kernel initialized, switching to ring 3 and starting context switch...", 2);
   STI;
-  system.change_ring(3);
+  //system.change_ring(3);
   while(true);
 
 }

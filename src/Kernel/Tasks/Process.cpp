@@ -9,9 +9,14 @@
 #include "Process.h"
 #include "KernelTasks/KTasks.h"
 
+void teste_func() {
+  kprintf("se vc está lendo isso, então a troca de contexto provavelmente funcionou.");
+  asm volatile ("cli;hlt;");
+}
+
 void Process::build_stack(void* stack_addr_base) {
   m_regs.rsp = (u64)stack_addr_base;
-  m_regs.rsp+= 256;
+  m_regs.rsp += 256;
   
   // Precisamos colocar 128 bytes de dados
   // que são os conteúdos dos registradores gerais
@@ -25,29 +30,28 @@ void Process::build_stack(void* stack_addr_base) {
   
   *((u64*)(m_regs.rsp)) = 0xDEADBEEF; // apenas para testar o R15
   m_regs.rsp+=(120);
-  *((u64*)(m_regs.rsp-16)) = m_regs.rsp; // RBP inicial
-  *((u64*)(m_regs.rsp-8)) = m_regs.rsp; // RSP inicial
+  *((u64*)(m_regs.rsp-8)) = m_regs.rsp; // RBP inicial
   
   // Simulando trap frame (interrupt frame)
-  m_regs.rsp += 8; // FIXME isso é realmente necessário?
+  m_regs.rsp += 8; // FIXME isso é realmente necessário? acho q sim
 
   // TODO m_regs.rip deve corresponder ao entrypoint do ELF
-  *((u64*)m_regs.rsp) = (u64) m_regs.rip; // endereço inicial
+  // TODO FIXME precisamos de um TSS para evitar GPF no IRETQ. 
+  *((u64*)m_regs.rsp) = (u64) m_regs.rip; // RIP
   m_regs.rsp+=8;
   *((u64*)m_regs.rsp) = 0x08; // CS
   m_regs.rsp+=8;
   *((u64*)m_regs.rsp) = 0; // RFLAGS TODO
-  m_regs.rsp += 8;
-  *((u64*)m_regs.rsp) = 0xBEEFDEAD; // SS
-  m_regs.rsp += 8;
-  *((u64*)m_regs.rsp) = m_regs.rsp; // RSP
   m_regs.rsp += 8; 
+  *((u64*)m_regs.rsp) = m_regs.rsp; // RSP
+  dbg("ENDEREÇO INICIAL EH %p", (void*)m_regs.rip);
 
-  m_regs.rsp = (u64)stack_addr_base;
+  m_regs.rsp = (u64)stack_addr_base+256;
 }
 
 Process::Process(char* name) : m_name(name) {
-  return;
+#if 0
+  IGNORANDO O ELF IMAGE POR AGORA PQ TO TESTANDO TROCA DE CONTEXTO!
   FILE* binary = g_fs->fopen("...");
   m_elf_image = ElfImage(binary, this);
 
@@ -64,14 +68,14 @@ Process::Process(char* name) : m_name(name) {
     __builtin_memcpy((char*)0x35a4e900, src_addr, current_phdr->p_filesz);
     ___memory_dump(src_addr);
   });
-  
-  m_elf_image.for_each_program_header(__for_each_phdr);
+#endif
+  //m_elf_image.for_each_program_header(__for_each_phdr);
 
-  Region stack_region = Region(this, 0);
-  build_stack((void*)stack_region.base_addr_as_physical());
-
+  //Region stack_region = Region(this, 0);
+  //build_stack((void*)stack_region.base_addr_as_physical());
+  m_regs.rip = (unsigned long)teste_func;
+  build_stack(kmalloc(9999));
   dbg("finalizado process::process()");
-  while(true);
 }
 #if 0  
 namespace Process{
