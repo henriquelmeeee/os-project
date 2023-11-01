@@ -1,5 +1,3 @@
-# make.sh antes de começar a usar Makefile
-
 cd Kernel
 
 echo "Criando backup..."
@@ -23,52 +21,7 @@ KERNEL_LOCATION="10485760"
 mkdir bin
 mkdir bin/tmp
 
-echo "Compilando kernel.cpp & panic.cpp"
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c kernel.cpp -o bin/tmp/kernel.o
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Core/panic.cpp -o bin/tmp/panic.o
-echo "Compilando Memory/*"
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Memory/Heap/Heap.cpp -o bin/tmp/heap.o
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Memory/Memory.cpp -o bin/tmp/memory.o
-
-
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Core/Debugging/Symbols.cpp -o bin/tmp/symbols.o
-
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c HAL/HAL.cpp -o bin/tmp/hal.o
-#g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Filesystem/Filesystem.cpp -o bin/tmp/fs.o
-
-
-echo "Compilando Drivers"
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Drivers/VIDEO/Video.cpp -o bin/tmp/video.o
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Drivers/Disk.cpp -o bin/tmp/disk.o
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Drivers/Mouse.cpp -o bin/tmp/mouse.o
-
-echo "Compilando interrupções"
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mno-sse -mno-mmx -mno-80387 -O0 -c Drivers/Keyboard.cpp -o bin/tmp/driver_kb.o
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mno-sse -mno-mmx -mno-80387 -O0 -c Interruptions/SpuriousInterrupt.cpp -o bin/tmp/spuriousi.o
-
-nasm -f elf64 Interruptions/ContextSwitchStub.asm -o bin/tmp/contexts_stub.o
-g++ -c -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mno-sse -mno-mmx -mno-80387 -O0 Interruptions/ContextSwitch.cpp -o bin/tmp/contexts.o
-
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -O0 -fomit-frame-pointer -mno-sse -mno-mmx -mno-80387 -c Interruptions/FPUErr.cpp -o bin/tmp/fpuerr.o
-
-nasm -f elf64 Syscalls/SyscallStub.asm -o bin/tmp/syscall_stub.o
-g++ -c -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mno-sse -mno-mmx -mno-80387 -O0 Syscalls/Syscall.cpp -o bin/tmp/syscalls.o
-
-echo "Compilando Tasks/*"
-g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -O0 -mgeneral-regs-only -c Tasks/Process.cpp -o bin/tmp/process.o
-g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mgeneral-regs-only -c Tasks/KernelTasks/Watchdog.cpp -o bin/tmp/watchdog.o
-
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Utils/Base.cpp -o bin/tmp/base.o
-
-g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Filesystem/Filesystem.cpp -o bin/tmp/fs.o
-ld -nostdlib -static -T Core/KernelLinker.ld bin/tmp/kernel.o bin/tmp/hal.o bin/tmp/heap.o bin/tmp/syscalls.o bin/tmp/fs.o bin/tmp/contexts_stub.o bin/tmp/contexts.o bin/tmp/symbols.o bin/tmp/memory.o bin/tmp/watchdog.o bin/tmp/fpuerr.o bin/tmp/syscall_stub.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o -o bin/kernel.bin
-
-echo "Compilando shell"
-
-#g++ -m64 -ffreestanding -fno-exceptions -fno-rtti -c Base/files/Shell.cpp -o bin/tmp/shell.o
-#ld -nostdlib -static -T Base/files/linker.ld bin/tmp/shell.o -o bin/shell.bin
-
-#dd if=/dev/zero of=../Build/disk.img bs=1M count=50
+make
 
 SECTORS_KERNEL=$(stat -c%s "bin/kernel.bin")
 SECTORS_KERNEL=$(($SECTORS_KERNEL / 512))

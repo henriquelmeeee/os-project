@@ -24,7 +24,6 @@ start:
   ;deprecated_vga_graphics_mode:
     ;mov ax, 0x0013
     ;int 0x10
-  xor ax, ax
   cld
   mov ah, 0x02
   mov al, SECTORS_PREKERNEL
@@ -61,14 +60,12 @@ start:
   ;int 0x10
   ;cli
   ;hlt
-  
 
   lgdt [gdt_descriptor]
   mov eax, cr0
   or eax, 1
   mov cr0, eax
 [bits 32]
-hlt
   db 0x66
   jmp CODE_SELECTOR:start_protected_mode
 

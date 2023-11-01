@@ -46,6 +46,9 @@ load_kernel:
      test al, 0x80
      jnz wait_for_disk
 
+     test al, 1
+     jnz disk_error
+
    mov dx, 0x1F0
    in ax, dx
  
@@ -61,6 +64,10 @@ load_kernel:
    mov byte [0xB8000], 'L'
 
    ret
+
+disk_error:
+  mov byte [0xB8000], 'D'
+  hlt
 check_cpuid:
   pushfd
   pop eax
@@ -88,7 +95,7 @@ check_cpuid:
   mov byte [0xb8006], 'o'
   mov byte [0xb8008], 'r'
   mov byte [0xb800a], ' '
-  mov byte [0xb800c], 'N'
+  mov byte [0xb800c], 'n'
   mov byte [0xb800e], 'o'
   mov byte [0xb8010], ' '
   mov byte [0xb8012], 'C'

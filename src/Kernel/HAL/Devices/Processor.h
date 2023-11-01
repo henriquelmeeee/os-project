@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef __PROCESSOR
-#define __PROCESSOR
-
 #include "../../Utils/Base.h"
 
 class Processor {
@@ -17,6 +14,5 @@ class Processor {
 
 };
 
-Processor* current_processor();
+//Processor* current_processor();
 
-#endif

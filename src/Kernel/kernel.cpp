@@ -125,7 +125,7 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   mem_usage+=KERNEL_SIZE;
 
   if(!(system.init_serial_for_dbg()))
-      kprintf("Warning: cannot initialize serial for debugging", 0x4);
+      kprintf("Warning: cannot initialize serial for debugging", 0xe);
 
   dbg("kmain()-> Kernel iniciando");
   char* txtaddr = (char*) 0xB8000;
