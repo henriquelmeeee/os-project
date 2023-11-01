@@ -5,12 +5,17 @@
 char buf[128];
 
 struct SpuriousInterrupt {
-//TODO
+  u64 rip;
+  u64 cs;
+  u64 rflags;
+  u64 rsp;
+  u64 ss;
 };
 
 extern "C" __attribute__((interrupt)) void i_spurious(SpuriousInterrupt *s) {
   CLI;
-  dbg("Interrupts::i_spurious()-> interrupção desconhcida acionada\n");
+  dbg("INTERRUPÇÃO DESCONHECIDA ACIONADA\n");
+  return;
   __asm__ volatile ("hlt");
   /*for(unsigned long i = 0; i<s->int_no; i++) {
     dbg("a");
