@@ -47,6 +47,7 @@ void Process::build_stack(void* stack_addr_base) {
 }
 
 Process::Process(char* name) : m_name(name) {
+  return;
   FILE* binary = g_fs->fopen("...");
   m_elf_image = ElfImage(binary, this);
 

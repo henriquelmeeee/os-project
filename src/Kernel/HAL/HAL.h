@@ -20,6 +20,8 @@ extern u64 kPT[512][512];
 
 #define KERNEL_START 10485760
 
+extern "C" [[noreturn]] volatile void ring3_entry();
+
 namespace HAL {
   class System {
     private:
@@ -37,18 +39,18 @@ namespace HAL {
         processors.append(new Processor(true, 0));
         this->bsp = processors[0];
 
-        Text::Writeln("Trying to create kernel pages");
+        Text::Writeln("Creating kernel pages");
         change_to_kernel_addr_space();
 
-        Text::Writeln("Trying to initialize the PIC");
+        Text::Writeln("Initializing the PIC");
         this->pic = PIC();
         this->pic.initialize();
 
-        Text::Writeln("Trying to initialize the APIC");
+        Text::Writeln("Initializing the APIC");
         this->apic = APIC();
         this->apic.initialize();
 
-        Text::Writeln("Trying to initialize syscalls");
+        Text::Writeln("Initializing syscalls");
         initialize_syscalls();
       }
 
@@ -58,8 +60,21 @@ namespace HAL {
       void write_cr3(u64 value);
       u64 read_cr3();
 
-      bool init_serial_for_dbg() {return false;} // TODO
-
+      bool init_serial_for_dbg() {return true;} // TODO
+      void change_ring(int ring) {
+      
+        asm volatile(
+          "pushq $0x23\n"               // Seletor de segmento de Ring 3
+          "pushq $999\n"                // Endereço de pilha de Ring 3
+          "pushfq\n"                    // Flags
+          "pushq $0x1B\n"               // Seletor de segmento de código de Ring 3
+          "pushq %0\n"        
+          "iretq\n"
+          :
+          : "r" (ring3_entry)
+          : "memory"
+        );
+      }
   };
 }
 

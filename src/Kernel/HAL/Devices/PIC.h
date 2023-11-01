@@ -95,6 +95,7 @@ class PIC {
           :
           : "m" (IDTR) // "lidt &IDTR"
           );
+      kprintf("PIC initialized successfully", 2);
     }
 };
 

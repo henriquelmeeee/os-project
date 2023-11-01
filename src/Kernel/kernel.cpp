@@ -142,10 +142,9 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 #endif
 
 
-  g_fs = (FS*)kmalloc(sizeof(FS));
-  g_fs->init();
-  FILE* initd = g_fs->fopen("initd");
-  dbg("teste");
+  //g_fs = (FS*)kmalloc(sizeof(FS));
+  //g_fs->init();
+  //FILE* initd = g_fs->fopen("initd");
   //g_fs->list_dir("/diretorio");
   //system.DoAutomatedTests();
     
@@ -158,12 +157,9 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   Process proc = Process("teste");
   g_kernel_procs[0] = &proc;
   g_kernel_procs[1] = nullptr;
-  while(true);
   
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));
-
-  kprintf("System booted");
 
   u16 divisor = 23864;
   outb(0x43, 0x36);  // Define o modo e o canal do PIT
@@ -175,7 +171,10 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   outb(0x40, high); // Envia o byte superior do divisor
 
   system.initialize_syscalls();
+  kprintf(" ");
+  kprintf("Kernel initialized, switching to ring 3 and starting context switch...", 2);
   STI;
+  system.change_ring(3);
   while(true);
 
 }

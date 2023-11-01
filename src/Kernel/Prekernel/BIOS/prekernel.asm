@@ -181,10 +181,15 @@ Real64Coding:
     hlt
     jmp loop_main
 
+
 gdt64:
-  dq 0
+  dq 0                                ; Entrada nula
 .code_segment: equ $ - gdt64
-  dq (1<<43) | (1<<44) | (1<<47) | (1<<53)
+  dq (1<<43) | (1<<44) | (1<<47) | (1<<53)   ; Segmento de código de Ring 0
+.user_code_segment: equ $ - gdt64
+  dq (1<<43) | (1<<44) | (1<<47) | (1<<53) | (3 << 45)   ; Segmento de código de Ring 3
+.user_data_segment: equ $ - gdt64
+  dq (1<<44) | (1<<47) | (1<<53) | (3 << 45)   ; Segmento de dados de Ring 3
 .pointer:
   dw $ - gdt64 - 1
   dq gdt64

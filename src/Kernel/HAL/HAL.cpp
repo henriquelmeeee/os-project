@@ -84,14 +84,17 @@ bool System::change_to_kernel_addr_space() {
   }
 }
 
-void System::write_cr3(u64 value) {
-  dbg("[System::write_cr3()] TODO");
-  while(true);
+inline void System::write_cr3(u64 value) {
+  asm volatile("mov %0, %%cr3" : : "r"(value));
 }
 
 u64 read_cr3() {
-  dbg("System::read_cr3() TODO");
-  while(true);
+  //asm volatile("mov %0, %%cr3" : : "r"(value));
 }
 
-} // namespace HAL 
+} // namespace HAL
+
+extern "C" [[noreturn]] volatile void ring3_entry() {
+
+  while(true);
+}
