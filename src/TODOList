@@ -5,5 +5,3 @@ TODO FIX: elf binary (m_raw_data) pointer corruption in Tasks/Process.cpp
 
 TODO: make.sh with Makefile are doing strange stuffs in binary (the first bytes of kernel.bin are not the kentrypoint())
 
-
-TODO IMPORTANT: Make an TSS to avoid GPF in 'iretq'

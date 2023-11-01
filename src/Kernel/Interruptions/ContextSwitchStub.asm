@@ -5,9 +5,10 @@ global timer_isr
 global second_timer_isr
 extern quantum_interruption_handle
 
+timer_vezes db 0
+
 timer_isr:
   cli
-  ;push rsp
   push rbp
   mov rbp, rsp
   push rdx ; TODO FIXME tem q fazer isso ser "push rdx" mas tem q cuidar da stack pq inicialmente isso era "pop" mas ta errado
@@ -44,6 +45,7 @@ second_timer_isr:
   pop rax
   pop rdx
   pop rbp
+
   ;pop rsp
 
 
@@ -52,5 +54,26 @@ second_timer_isr:
  ; pop rbx
  ; pop rdi
   ; ...
+
+  ; TODO FIXME como o 'iretq' está com problemas
+  ; irei manualmente fazer ele
+  ; mas isso significa ignorar os rx registers
+  
+  cmp byte [timer_vezes], 1
+  je __debug
+  popf ; rflags
+  pop r12 ; cs
+  pop r13 ; rip
+  ; esquece o CS por agora
+  inc byte [timer_vezes]
   sti
-  iretq
+  jmp r13
+
+; FIXME
+; depois que o timer vai na segunda vez,
+; parece haver alguma inconsistência
+__debug:
+  pop rax ; deve ser rflags
+  pop rdi ; deve ser cs
+  pop rsi ; deve ser rip
+  int 3

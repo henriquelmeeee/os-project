@@ -10,8 +10,8 @@
 #include "KernelTasks/KTasks.h"
 
 void teste_func() {
-  kprintf("se vc está lendo isso, então a troca de contexto provavelmente funcionou.");
-  asm volatile ("cli;hlt;");
+  kprintf("se vc esta lendo isso, entao a troca de contexto funcionou.");
+  while(true);
 }
 
 void Process::build_stack(void* stack_addr_base) {
@@ -29,7 +29,7 @@ void Process::build_stack(void* stack_addr_base) {
   //  por isso, aqui simulamos tudo isso.
   
   *((u64*)(m_regs.rsp)) = 0xDEADBEEF; // apenas para testar o R15
-  m_regs.rsp+=(120);
+  m_regs.rsp+=(120-8);
   *((u64*)(m_regs.rsp-8)) = m_regs.rsp; // RBP inicial
   
   // Simulando trap frame (interrupt frame)
@@ -37,13 +37,11 @@ void Process::build_stack(void* stack_addr_base) {
 
   // TODO m_regs.rip deve corresponder ao entrypoint do ELF
   // TODO FIXME precisamos de um TSS para evitar GPF no IRETQ. 
-  *((u64*)m_regs.rsp) = (u64) m_regs.rip; // RIP
+  *((u64*)m_regs.rsp) = 0xbeefdead; // rflags TODO
   m_regs.rsp+=8;
-  *((u64*)m_regs.rsp) = 0x08; // CS
+  *((u64*)m_regs.rsp) = 0xface; // CS
   m_regs.rsp+=8;
-  *((u64*)m_regs.rsp) = 0; // RFLAGS TODO
-  m_regs.rsp += 8; 
-  *((u64*)m_regs.rsp) = m_regs.rsp; // RSP
+  *((u64*)m_regs.rsp) = (u64) m_regs.rip; // rip
   dbg("ENDEREÇO INICIAL EH %p", (void*)m_regs.rip);
 
   m_regs.rsp = (u64)stack_addr_base+256;
