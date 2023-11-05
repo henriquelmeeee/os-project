@@ -22,6 +22,50 @@ extern u64 kPT[512][512];
 
 extern "C" [[noreturn]] volatile void ring3_entry();
 
+typedef struct {
+    u16 limit_low;            // Limite 15:0
+    u16 base_low;             // Base 15:0
+    u8 base_middle;           // Base 23:16
+    u8 access;                // Tipo de acesso
+    u8 limit_high : 4;        // Limite 19:16
+    u8 flags : 4;             // Flags
+    u8 base_high;             // Base 31:24
+    u32 base_upper;           // Base 63:32
+    u32 reserved;             // Reservado
+} __attribute__((packed, aligned(8))) gdt_descriptor;
+
+typedef struct {
+    u16 size;                 // Tamanho da GDT - 1
+    u64 address;              // Endereço linear da GDT
+} __attribute__((packed)) gdt_pointer;
+
+static void encode_gdt_entry(gdt_descriptor *target, u64 base, u32 limit, u8 access, u8 flags) {
+    // Inicialize a entrada com zeros
+    *target = (gdt_descriptor){0};
+
+    // Limite (tamanho do segmento)
+    target->limit_low = limit & 0xFFFF;
+    target->limit_high = (limit >> 16) & 0x0F;
+    
+    // Base (início do segmento)
+    target->base_low = base & 0xFFFF;
+    target->base_middle = (base >> 16) & 0xFF;
+    target->base_high = (base >> 24) & 0xFF;
+    target->base_upper = (u32)(base >> 32);
+    
+    // Definindo acesso e flags
+    target->access = access;
+    target->flags = flags & 0x0F;
+    
+    // Reservado deve ser zero
+    target->reserved = 0;
+}
+
+#define GDT_ENTRY_COUNT 5
+
+static gdt_descriptor gdt[GDT_ENTRY_COUNT];
+static gdt_pointer gdtr;
+
 namespace HAL {
   class System {
     private:
@@ -52,6 +96,20 @@ namespace HAL {
 
         Text::Writeln("Initializing syscalls");
         initialize_syscalls();
+
+        //configure_gdt_with_tss();
+      }
+
+      void configure_gdt_with_tss() {
+        // Configurando entradas padrão: entrada nula, CS ring 0, CS ring 3, DS ring 3.
+        encode_gdt_entry(&gdt[0], 0, 0, 0, 0);
+        encode_gdt_entry(&gdt[1], 0, 0xFFFFF, 0x9A, 0xA0);
+        encode_gdt_entry(&gdt[2], 0, 0xFFFFF, 0xFA, 0xA0);
+        encode_gdt_entry(&gdt[3], 0, 0xFFFFF, 0xF2, 0xA0);
+        // TODO tss 
+        gdtr.size = sizeof(gdt) - 1;
+        gdtr.address = (u64)&gdtr;
+        asm volatile("lgdt %0" : : "m" (gdtr));
       }
 
       bool change_to_kernel_addr_space();
