@@ -14,6 +14,9 @@ main:
   call configure_pg
   call long_mode
 
+disk_error:
+  hlt
+
 load_kernel:
   mov ecx, 0 ; contador
   mov dx, 0x1F6
@@ -45,8 +48,7 @@ load_kernel:
      in al, dx
      test al, 0x80
      jnz wait_for_disk
-
-     test al, 1
+     test al, 0x01
      jnz disk_error
 
    mov dx, 0x1F0
@@ -64,10 +66,6 @@ load_kernel:
    mov byte [0xB8000], 'L'
 
    ret
-
-disk_error:
-  mov byte [0xB8000], 'D'
-  hlt
 check_cpuid:
   pushfd
   pop eax
@@ -89,21 +87,6 @@ check_cpuid:
   je .no_cpuid
   ret
 .no_cpuid:
-  mov byte [0xb8000], 'E'
-  mov byte [0xb8002], 'r'
-  mov byte [0xb8004], 'r'
-  mov byte [0xb8006], 'o'
-  mov byte [0xb8008], 'r'
-  mov byte [0xb800a], ' '
-  mov byte [0xb800c], 'n'
-  mov byte [0xb800e], 'o'
-  mov byte [0xb8010], ' '
-  mov byte [0xb8012], 'C'
-  mov byte [0xb8014], 'P'
-  mov byte [0xb8016], 'U'
-  mov byte [0xb8018], 'I'
-  mov byte [0xb801a], 'D'
-  mov byte [0xb801c], ' '
   hlt
 
 configure_pg:
@@ -181,15 +164,10 @@ Real64Coding:
     hlt
     jmp loop_main
 
-
 gdt64:
-  dq 0                                ; Entrada nula
+  dq 0
 .code_segment: equ $ - gdt64
-  dq (1<<43) | (1<<44) | (1<<47) | (1<<53)   ; Segmento de código de Ring 0
-.user_code_segment: equ $ - gdt64
-  dq (1<<43) | (1<<44) | (1<<47) | (1<<53) | (3 << 45)   ; Segmento de código de Ring 3
-.user_data_segment: equ $ - gdt64
-  dq (1<<44) | (1<<47) | (1<<53) | (3 << 45)   ; Segmento de dados de Ring 3
+  dq (1<<43) | (1<<44) | (1<<47) | (1<<53)
 .pointer:
   dw $ - gdt64 - 1
   dq gdt64
