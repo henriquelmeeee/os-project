@@ -1,0 +1,2 @@
+- O problema do CPU fault / reinício automático ocorre somente quando eu compilo o HAL (mesmo com halt() no kmain())
+talvez esteja sobrescrevendo alguma área da memória :v
