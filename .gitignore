@@ -4,3 +4,4 @@ src/*.zip
 src/Kernel/bin/*
 src/.gdb_history
 Backup/*
+src/Build/disk.img
