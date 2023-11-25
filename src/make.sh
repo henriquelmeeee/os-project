@@ -21,6 +21,9 @@ KERNEL_LOCATION="10485760"
 mkdir bin
 mkdir bin/tmp
 
+
+GPP_CMDLINE="g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c "
+
 echo "Compilando kernel.cpp & panic.cpp"
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c kernel.cpp -o bin/tmp/kernel.o
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Core/panic.cpp -o bin/tmp/panic.o
@@ -57,13 +60,13 @@ g++ -m64 -O0 -fno-builtin -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -mge
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Utils/Base.cpp -o bin/tmp/base.o
 
 g++ -m64 -fno-PIC -ffreestanding -fno-exceptions -fno-rtti -c Filesystem/Filesystem.cpp -o bin/tmp/fs.o
-ld -nostdlib -static -T Core/KernelLinker.ld bin/tmp/kernel.o bin/tmp/heap.o bin/tmp/syscalls.o bin/tmp/fs.o bin/tmp/contexts_stub.o bin/tmp/contexts.o bin/tmp/symbols.o bin/tmp/memory.o bin/tmp/watchdog.o bin/tmp/fpuerr.o bin/tmp/syscall_stub.o bin/tmp/mouse.o bin/tmp/disk.o bin/tmp/driver_kb.o bin/tmp/panic.o bin/tmp/base.o bin/tmp/video.o bin/tmp/spuriousi.o bin/tmp/process.o -o bin/kernel.bin
 
-echo "Compilando shell"
+$GPP_CMDLINE HAL/HAL.cpp -o bin/tmp/hal.o
+$GPP_CMDLINE HAL/Devices/APIC.cpp -o bin/tmp/hal_apic.o
+$GPP_CMDLINE HAL/Devices/PIC.cpp -o bin/tmp/hal_pic.o
+$GPP_CMDLINE HAL/Devices/Processor.cpp -o bin/tmp/hal_processor.o
 
-g++ -m64 -ffreestanding -fno-exceptions -fno-rtti -c Base/files/Shell.cpp -o bin/tmp/shell.o
-ld -nostdlib -static -T Base/files/linker.ld bin/tmp/shell.o -o bin/shell.bin
-
+ld -nostdlib -static -T Core/KernelLinker.ld bin/tmp/*.o -o bin/kernel.bin
 #dd if=/dev/zero of=../Build/disk.img bs=1M count=50
 
 SECTORS_KERNEL=$(stat -c%s "bin/kernel.bin")

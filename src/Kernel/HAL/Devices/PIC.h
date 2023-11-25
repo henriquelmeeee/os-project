@@ -30,8 +30,11 @@ class PIC {
 
   public:
     PIC() {
-      kprintf("PIC: Initializing...");
+    }
+
+    bool initialize() {
       __initialize_idt();
+      return true;
     }
 
     bool append_idt(u64 addr, u32 offset, u32 flags = 0x8E) {
@@ -57,6 +60,9 @@ class PIC {
     }
   private:
     inline void __initialize_idt() {
+      // ICW1
+      outb(PIC1_COMMAND, 0x11);
+      outb(PIC2_COMMAND, 0x11);
       // ICW2: Definir o vetor de início
       outb(PIC1_DATA, 32);   // Definir o vetor de interrupção inicial do PIC1 para 32 (0x20)
       outb(PIC2_DATA, 40);    // Definir PIC2 para ser acionado pela linha IRQ2 do PIC1 (40)
@@ -73,9 +79,6 @@ class PIC {
       //outb(PIC1_DATA, 0xFD); // desmascara teclado
       //outb(PIC2_DATA, 0xFF); // mascara tudo da PIC2
         
-      outb(PIC1_DATA, 0);
-      outb(PIC2_DATA, 0);
-
       outb(PIC1_DATA, 0xFE); // desmascara apenas o TIMER
       outb(PIC2_DATA, 0xFF);
       __builtin_memset(IDT_entries, 0, sizeof(IDT_entries));
@@ -92,6 +95,7 @@ class PIC {
           :
           : "m" (IDTR) // "lidt &IDTR"
           );
+      kprintf("PIC initialized successfully", 2);
     }
 };
 

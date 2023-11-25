@@ -3,7 +3,7 @@
 #ifndef PROCESSOR
 #define PROCESSOR
 
-#include "Memory/Base_Mem.h"
+//#include "Memory/Base_Mem.h"
 
 #if 0
 enum DeviceType {
@@ -39,19 +39,32 @@ class Keyboard : public PS2 {
 
     Keyboard() {}
 };
-#endif
-class CPU {
+
+#include "Utils/Base.h"
+
+inline u64 read_msr(u32 msr) {
+  u32 low, high;
+  asm volatile ("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
+  return ((u64)high << 32) | low;
+}
+
+inline void write_msr(u32 msr, u64 value) {
+  u32 low = (u32) value;
+  u32 high = (u32) (value >> 32);
+  asm volatile("wrmsr" : : "a"(low), "d"(high), "c"(msr));
+}
+
+class Processor {
   public:
-    unsigned short id;
-    //Memory::Vector<Device*> devices;
+    u32 m_identifier;
 
-    unsigned long get_eax(unsigned long *to_ret) {
-      return 1; // TODO FIXME implement that
-    }
+    u64 m_local_apic_addr;
 
 
+    Processor(u32 identifier) \
+      : m_identifier(identifier) {}
+    
+} extern *processor;
 
-    CPU(unsigned short _id=0) : id(_id) {}
-} extern *Processor;
-
+#endif
 #endif

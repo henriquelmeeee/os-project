@@ -126,6 +126,7 @@ FS* g_fs;
 #include "Interruptions/ContextSwitch.h"
 
 extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point kernel
+  halt();
   u64* rbp;
   __asm__ volatile("mov %%rbp, %0" : "=r" (rbp));
   dbg("RBP for kmain(): %p\n", rbp);
