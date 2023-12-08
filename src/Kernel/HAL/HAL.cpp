@@ -30,6 +30,7 @@ void System::initialize_syscalls() {
 }
 
 bool System::change_to_kernel_addr_space() {
+#if 0
   if(kernel_pagination_already_created) {
     write_cr3((u64)__kernel_pml4);
     return true;
@@ -82,6 +83,8 @@ bool System::change_to_kernel_addr_space() {
     return true;
 
   }
+#endif
+  //FIXME to tirando temporariamente essa func
 }
 
 inline void System::write_cr3(u64 value) {
@@ -92,9 +95,22 @@ u64 read_cr3() {
   //asm volatile("mov %0, %%cr3" : : "r"(value));
 }
 
+void System::configure_gdt_with_tss() {
+        // Configurando entradas padrão: entrada nula, CS ring 0, CS ring 3, DS ring 3.
+  encode_gdt_entry(&gdt[0], 0, 0, 0, 0);
+  encode_gdt_entry(&gdt[1], 0, 0xFFFFF, 0x9A, 0xA0);
+  encode_gdt_entry(&gdt[2], 0, 0xFFFFF, 0xFA, 0xA0);
+  encode_gdt_entry(&gdt[3], 0, 0xFFFFF, 0xF2, 0xA0);
+  // TODO tss 
+  gdtr.size = sizeof(gdt) - 1;
+  gdtr.address = (u64)&gdtr;
+  asm volatile("lgdt %0" : : "m" (gdtr));
+}
+
 } // namespace HAL
 
 extern "C" [[noreturn]] volatile void ring3_entry() {
-
   while(true);
 }
+
+

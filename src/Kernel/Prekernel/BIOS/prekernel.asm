@@ -20,7 +20,7 @@ load_kernel:
   mov al, 0xE0
   out dx, al ; cabeçote de disco e numero do drive
   mov dx, 0x1F2
-  mov al, (SECTORS_KERNEL)
+  mov al, (SECTORS_KERNEL) ; NEEDS TO BE 'SECTORS_KERNEL'
   out dx, al ; numero de setores a ler
 
   mov dx, 0x1F3
@@ -45,6 +45,8 @@ load_kernel:
      in al, dx
      test al, 0x80
      jnz wait_for_disk
+     test al, 0x08 ; test DRQ
+     jz disk_error
 
    mov dx, 0x1F0
    in ax, dx
@@ -53,14 +55,19 @@ load_kernel:
    add edi, ecx
    mov [edi], ax
    add ecx, 2
-   cmp ecx, (SECTORS_KERNEL * 512)
+   cmp ecx, (SECTORS_KERNEL * 512) ; NEEDS TO BE 'SECTORS_KERNEL * 512'
    je read_finish
    jmp read_loop
 
   read_finish:
    mov byte [0xB8000], 'L'
-
    ret
+  disk_error:
+   mov byte [0xB8000], 'E'
+   jmp $
+  disk_not_returned:
+   mov byte [0xB8000], al
+   jmp $
 check_cpuid:
   pushfd
   pop eax

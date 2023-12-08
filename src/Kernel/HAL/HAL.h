@@ -78,6 +78,7 @@ namespace HAL {
       Processor* bsp = nullptr;
 
       System() {
+        __asm__ volatile("hlt");
         Text::NewLine();
         Text::Writeln("HAL: Starting devices");
         processors.append(new Processor(true, 0));
@@ -100,17 +101,7 @@ namespace HAL {
         //configure_gdt_with_tss();
       }
 
-      void configure_gdt_with_tss() {
-        // Configurando entradas padrão: entrada nula, CS ring 0, CS ring 3, DS ring 3.
-        encode_gdt_entry(&gdt[0], 0, 0, 0, 0);
-        encode_gdt_entry(&gdt[1], 0, 0xFFFFF, 0x9A, 0xA0);
-        encode_gdt_entry(&gdt[2], 0, 0xFFFFF, 0xFA, 0xA0);
-        encode_gdt_entry(&gdt[3], 0, 0xFFFFF, 0xF2, 0xA0);
-        // TODO tss 
-        gdtr.size = sizeof(gdt) - 1;
-        gdtr.address = (u64)&gdtr;
-        asm volatile("lgdt %0" : : "m" (gdtr));
-      }
+      void configure_gdt_with_tss();
 
       bool change_to_kernel_addr_space();
       void initialize_syscalls();

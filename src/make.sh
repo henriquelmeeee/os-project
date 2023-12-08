@@ -127,6 +127,7 @@ truncate ../Build/disk.img --size=100M
 #VBoxManage internalcommands sethduuid ../Build/disk.vdi
 
 echo "Building user-land stuff"
+sudo losetup -d /dev/loop0
 #python3 ../Userland/build_userland.py
 sudo umount /dev/loop0 2>/dev/null
 sudo rm -rf /tmp/k_tmp

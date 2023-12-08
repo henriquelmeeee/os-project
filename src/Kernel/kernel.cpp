@@ -30,15 +30,15 @@
 #include "Drivers/Keyboard.h"
 
 #include "Processor.h"
-#include "HAL/HAL.h"
 
 #include "Syscalls/Syscall.h"
-
-alignas(4096) IDTEntry16 IDT_entries[256];
-
-unsigned long long mem_usage = 0;
+#include "HAL/HAL.h"
 
 extern "C" void kmain(BootloaderInfo* info);
+
+alignas(4096) IDTEntry16 IDT_entries[256];
+unsigned long long mem_usage = 0;
+
 extern "C" __attribute__((sysv_abi)) void kentrypoint(BootloaderInfo* info) {kmain(info);}
 
 volatile void sleep(unsigned long long ticks) {
@@ -247,17 +247,12 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   g_fs = (FS*)kmalloc(sizeof(FS));
   g_fs->init();
   FILE* initd = g_fs->fopen("initd");
-  dbg("teste");
-  //g_fs->list_dir("/diretorio");
-  //system.DoAutomatedTests();
     
-  g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
+  //g_timer_temporary_stack = ((u64)kmalloc(1024))+1024; // nao está em uso POR ENQUANTO, mas TALVEZ eu use
 
   system.pic.append_idt((u64) timer_isr, 32);
+ 
   g_kernel_procs = Memory::Vector<Process*>();
-  //g_kernel_procs[0] = (proc);
-  dbg("kernel_process_test: %p", (void*)kernel_process_test);
-  
   Process proc = Process("teste", true, (void*)kernel_process_test);
   g_kernel_procs[0] = &proc;
   g_kernel_procs[1] = nullptr;
@@ -276,8 +271,8 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
   outb(0x40, low);  // Envia o byte inferior do divisor
   outb(0x40, high); // Envia o byte superior do divisor
 
-  system.initialize_syscalls();
-  STI;
+  //system.initialize_syscalls();
+  //STI;
   while(true);
 
 }
