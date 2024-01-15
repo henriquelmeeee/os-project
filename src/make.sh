@@ -66,7 +66,9 @@ $GPP_CMDLINE HAL/Devices/APIC.cpp -o bin/tmp/hal_apic.o
 $GPP_CMDLINE HAL/Devices/PIC.cpp -o bin/tmp/hal_pic.o
 $GPP_CMDLINE HAL/Devices/Processor.cpp -o bin/tmp/hal_processor.o
 
-ld -nostdlib -static -T Core/KernelLinker.ld bin/tmp/*.o -o bin/kernel.bin
+cd bin/tmp
+ld -nostdlib -static -T ../../Core/KernelLinker.ld hal.o contexts_stub.o contexts.o syscall_stub.o syscalls.o fpuerr.o hal_apic.o hal_pic.o hal_processor.o fs.o base.o watchdog.o driver_kb.o spuriousi.o disk.o mouse.o video.o symbols.o memory.o heap.o panic.o kernel.o -o ../../bin/kernel.bin
+cd ../..
 #dd if=/dev/zero of=../Build/disk.img bs=1M count=50
 
 SECTORS_KERNEL=$(stat -c%s "bin/kernel.bin")

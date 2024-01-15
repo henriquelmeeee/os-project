@@ -5,34 +5,22 @@
  * 3->4GB         -> Static Data related (userspace)
 */
 
-#define KERNEL_SIZE 26112
-// Drivers:
-//#include "Drivers/Keyboard.h"
-#include "Drivers/VIDEO/preload.h"
-#include "Drivers/Disk.h"
-//#include "Drivers/Mouse.h"
-
+#include "Drivers/preload.h"
 #include "Filesystem/Filesystem.h"
-
 #include "Core/DefaultConfig.h"
 #include "Utils/Base.h"
 #include "Utils/Errors.h"
-
 #include "Memory/Base_Mem.h"
 #include "Memory/Heap/Heap.h"
-
 #include "Tasks/Process.h"
 #include "Tasks/KernelTasks/KTasks.h"
 #include "Core/panic.h"
-
-// Interrupções:
 #include "Interruptions/preload.h"
-#include "Drivers/Keyboard.h"
-
 #include "Processor.h"
-
 #include "Syscalls/Syscall.h"
 #include "HAL/HAL.h"
+
+#define KERNEL_SIZE 26112
 
 extern "C" void kmain(BootloaderInfo* info);
 
@@ -85,36 +73,6 @@ alignas(4096) u64 kPT[512][512];
 //Memory::PhysicalRegion physical_stack;
 //Memory::PhysicalRegion physical_heap;
 //Memory::PhysicalRegion physical_data;
-
-volatile void kernel_process_test() {
-  STI;
-  dbg("Kernel process 1 here!");
-  while(true);
-_label:
-  STI;
-  goto _label;
-#if 0
-_label:
-  kprintf("kernel process!");
-  for(int i = 0; i<99999999; i++);
-  goto _label;
-#endif
-}
-
-volatile void kernel_process_test2() {
-  STI;
-  dbg("Kernel process 2 here!");
-  __asm__ volatile("int $3");
-  while(true);
-_label2:
-  STI;
-  goto _label2;
-#if 0
-  kprintf("another kernel process!");
-  for(int i = 0; i<99999999; i++);
-  goto _label2;
-#endif
-}
 
 Memory::Vector<Process> g_procs; //= Memory::Vector<Process>();
 Memory::Vector<Process*> g_kernel_procs; // = Memory::Vector<Process>();
@@ -252,10 +210,10 @@ extern "C" void __attribute__((noinline)) kmain(BootloaderInfo* info) { // point
 
   system.pic.append_idt((u64) timer_isr, 32);
  
-  g_kernel_procs = Memory::Vector<Process*>();
-  Process proc = Process("teste", true, (void*)kernel_process_test);
-  g_kernel_procs[0] = &proc;
-  g_kernel_procs[1] = nullptr;
+  //g_kernel_procs = Memory::Vector<Process*>();
+  //Process proc = Process("teste", true, (void*)kernel_process_test);
+  //g_kernel_procs[0] = &proc;
+  //g_kernel_procs[1] = nullptr;
   
   //u64 rip = (u64) proc.m_regs.rip;
   //asm volatile("jmp *%0" : : "r" (rip));
